@@ -13,15 +13,15 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.15)
 
-project(libhal-__device__ LANGUAGES CXX)
+project(libhal-sensor LANGUAGES CXX)
 
 libhal_test_and_make_library(
-  LIBRARY_NAME libhal-__device__
+  LIBRARY_NAME libhal-sensor
 
   SOURCES
-  src/__device__.cpp
+  src/sensor.cpp
 
   TEST_SOURCES
-  tests/__device__.test.cpp
+  tests/sensor.test.cpp
   tests/main.test.cpp
 )

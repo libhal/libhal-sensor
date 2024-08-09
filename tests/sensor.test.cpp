@@ -12,9 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include <libhal-sensor/sensor.hpp>
 
-namespace hal::__device__ {   // NOLINT
-struct __device___replace_me  // NOLINT
-{};
-}  // namespace hal::__device__
+#include <boost/ut.hpp>
+
+namespace hal::sensor {
+void sensor_test()
+{
+  using namespace boost::ut;
+  using namespace std::literals;
+
+  "sensor::create()"_test = []() {
+    // Setup
+    // Exercise
+    // Verify
+  };
+};
+}  // namespace hal::sensor

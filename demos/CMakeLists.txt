@@ -18,14 +18,14 @@ project(demos LANGUAGES CXX)
 
 libhal_build_demos(
   DEMOS
-  __device__
+  sensor
 
   INCLUDES
   .
 
   PACKAGES
-  libhal-__device__
+  libhal-sensor
 
   LINK_LIBRARIES
-  libhal::__device__
+  libhal::sensor
 )
