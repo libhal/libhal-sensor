@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <libhal-__device__/__device__.hpp>
+#include <libhal-sensor/sensor.hpp>
 
 int main()
 {
-  hal::__device__::__device___replace_me bar;
+  hal::sensor::sensor_replace_me bar;
 }
