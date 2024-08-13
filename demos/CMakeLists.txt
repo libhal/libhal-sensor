@@ -18,14 +18,19 @@ project(demos LANGUAGES CXX)
 
 libhal_build_demos(
   DEMOS
-  sensor
+  mpu6050
+  mpl3115a2
+  icm20948
+  tmp102
 
   INCLUDES
   .
 
   PACKAGES
   libhal-sensor
+  libhal-soft
 
   LINK_LIBRARIES
   libhal::sensor
+  libhal::soft
 )

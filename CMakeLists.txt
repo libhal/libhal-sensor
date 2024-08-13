@@ -19,9 +19,14 @@ libhal_test_and_make_library(
   LIBRARY_NAME libhal-sensor
 
   SOURCES
-  src/sensor.cpp
+  src/imu/icm20948.cpp
+  src/imu/mpu6050.cpp
+  src/temperature/tmp102.cpp
+  src/multi/mpl3115a2.cpp
 
   TEST_SOURCES
-  tests/sensor.test.cpp
+  tests/imu/mpu6050.test.cpp
+  tests/imu/mpu6050.test.cpp
+  tests/temperature/tmp102.test.cpp
   tests/main.test.cpp
 )

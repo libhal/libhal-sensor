@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace hal::sensor {
-extern void sensor_test();
-}  // namespace hal::sensor
-
 int main()
 {
-  hal::sensor::sensor_test();
+  // Add non-suite tests here that must be called in a specific order.
+  // In general it is bad practice to couple unit tests with each other such
+  // that they need to be executed in order.
 }

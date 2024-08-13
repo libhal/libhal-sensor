@@ -17,6 +17,7 @@
 #include <optional>
 
 #include <libhal/functional.hpp>
+#include <libhal/i2c.hpp>
 #include <libhal/output_pin.hpp>
 #include <libhal/serial.hpp>
 #include <libhal/steady_clock.hpp>
@@ -24,9 +25,10 @@
 struct resource_list
 {
   hal::callback<void()> reset;
-  std::optional<hal::serial*> console;
-  std::optional<hal::steady_clock*> clock;
-  std::optional<hal::output_pin*> status_led;
+  std::optional<hal::serial*> console = std::nullopt;
+  std::optional<hal::steady_clock*> clock = std::nullopt;
+  std::optional<hal::output_pin*> status_led = std::nullopt;
+  std::optional<hal::i2c*> i2c = std::nullopt;
   // Add more driver interfaces here ...
 };
 

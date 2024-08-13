@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <libhal-sensor/sensor.hpp>
+#include <libhal-sensor/imu/icm20948.hpp>
+#include <libhal-sensor/imu/mpu6050.hpp>
+#include <libhal-sensor/multi/mpl3115a2.hpp>
+#include <libhal-sensor/temperature/tmp102.hpp>
 
 int main()
 {
-  hal::sensor::sensor_replace_me bar;
 }

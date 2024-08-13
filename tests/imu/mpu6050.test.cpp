@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <libhal-sensor/sensor.hpp>
+#include <libhal-sensor/imu/mpu6050.hpp>
 
 #include <boost/ut.hpp>
 
 namespace hal::sensor {
-void sensor_test()
-{
+boost::ut::suite test_mpu6050 = []() {
   using namespace boost::ut;
   using namespace std::literals;
 
-  "sensor::create()"_test = []() {
+  "mpu6050::mpu6050()"_test = []() {
     // Setup
     // Exercise
     // Verify

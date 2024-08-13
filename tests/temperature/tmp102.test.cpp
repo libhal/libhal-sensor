@@ -12,9 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include <libhal-sensor/temperature/tmp102.hpp>
+
+#include <boost/ut.hpp>
 
 namespace hal::sensor {
-struct sensor_replace_me
-{};
+boost::ut::suite test_tmp102 = []() {
+  using namespace boost::ut;
+  using namespace std::literals;
+
+  "tmp102::tmp102()"_test = []() {
+    // Setup
+    // Exercise
+    // Verify
+  };
+};
 }  // namespace hal::sensor

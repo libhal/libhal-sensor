@@ -23,8 +23,7 @@ resource_list resources{};
 
 [[noreturn]] void terminate_handler() noexcept
 {
-
-  if (not resources.status_led && not resources.console) {
+  if (not resources.status_led && not resources.status_led) {
     // spin here until debugger is connected
     while (true) {
       continue;
