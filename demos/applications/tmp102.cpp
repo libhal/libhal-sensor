@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "resource_list.hpp"
+#include <libhal-sensor/temperature/tmp102.hpp>
 #include <libhal-util/serial.hpp>
 #include <libhal-util/steady_clock.hpp>
 
-#include "../resource_list.hpp"
+#include <resource_list.hpp>
 
 void application(resource_list& p_map)
 {
@@ -24,13 +26,13 @@ void application(resource_list& p_map)
 
   auto& clock = *p_map.clock.value();
   auto& console = *p_map.console.value();
-  auto& led = *p_map.status_led.value();
+  auto& i2c = *p_map.i2c.value();
 
-  hal::print(console, "Demo Application Starting...\n\n");
+  hal::print(console, "[tmp102] Application Starting...\n\n");
+  hal::tmp::tmp102 tmp102(i2c);
 
   while (true) {
-    hal::print(console, "Hello, world\n");
-    led.level(!led.level());  // Toggle LED
     hal::delay(clock, 500ms);
+    hal::print<32>(console, "Measured temperature = %f °C\n", tmp102.read());
   }
 }

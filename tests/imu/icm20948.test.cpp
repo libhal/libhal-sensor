@@ -12,7 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libhal-sensor/sensor.hpp"
+#include <libhal-sensor/imu/icm20948.hpp>
+
+#include <boost/ut.hpp>
 
 namespace hal::sensor {
+boost::ut::suite test_icm20948 = []() {
+  using namespace boost::ut;
+  using namespace std::literals;
+
+  "icm20948::icm20948()"_test = []() {
+    // Setup
+    // Exercise
+    // Verify
+  };
+};
 }  // namespace hal::sensor

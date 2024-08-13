@@ -12,22 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <libhal-micromod/micromod.hpp>
+#include <libhal-sensor/multi/mpl3115a2.hpp>
 
-#include <resource_list.hpp>
+#include <boost/ut.hpp>
 
-resource_list initialize_platform()
-{
-  using namespace hal::literals;
+namespace hal::sensor {
+boost::ut::suite test_mpl3115a2 = []() {
+  using namespace boost::ut;
+  using namespace std::literals;
 
-  hal::micromod::v1::initialize_platform();
-
-  return {
-    .reset = +[]() { hal::micromod::v1::reset(); },
-    .console = &hal::micromod::v1::console(hal::buffer<128>),
-    .clock = &hal::micromod::v1::uptime_clock(),
-    .status_led = &hal::micromod::v1::led(),
-    // TODO(): Add i2c back when mod-stm32f1-v4 supports i2c
-    // .i2c = &i2c,
+  "mpl3115a2::mpl3115a2()"_test = []() {
+    // Setup
+    // Exercise
+    // Verify
   };
-}
+};
+}  // namespace hal::sensor
