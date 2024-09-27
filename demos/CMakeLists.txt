@@ -22,6 +22,7 @@ libhal_build_demos(
   mpl3115a2
   icm20948
   tmp102
+  sandbox
 
   INCLUDES
   .
