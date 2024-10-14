@@ -6,6 +6,10 @@
 
 #include <resource_list.hpp>
 
+auto ctrl_measure() {
+  return std::to_array<hal::byte>({0xF4});
+}
+
 void application(resource_list& p_map)
 {
   using namespace std::chrono_literals;
@@ -19,13 +23,26 @@ void application(resource_list& p_map)
   // establish device address
   hal::byte device_address = 0b111'0111;
 
+  // test time to check status register
+  std::array<hal::byte, 1> payload;
+  std::array<hal::byte, 1> send_address = {0xF4};
+  std::array<hal::byte, 1> send1 = {0xFA};
+  std::array<hal::byte, 1> send2 = {0xFB};
+  uint8_t check_bit;
+  hal::write_then_read(i2c, device_address, send_address, payload, hal::never_timeout());
+  check_bit = ((payload[0]) >> 5) & 1;
+  if (check_bit == 1) hal::write(i2c, device_address, send1, hal::never_timeout());
+  else hal::write(i2c, device_address, send2, hal::never_timeout());
+
+  hal::delay(clock, 1s);
+
   // establish payload that contains register addresses
   std::array<hal::byte, 1> read_address_payload;
 
   // verify device is communicating properly
   std::array<hal::byte, 1> returned_device_id;
   read_address_payload[0] = 0xD0;
-  hal::write_then_read(i2c, device_address, read_address_payload, returned_device_id, hal::never_timeout());
+  hal::write_then_read(i2c, device_address, ctrl_measure(), returned_device_id, hal::never_timeout());
   hal::print<64>(console, "Device ID: %x\n", returned_device_id[0]);
 
   // create buffer to store returned calibration register data
@@ -48,23 +65,6 @@ void application(resource_list& p_map)
   int16_t mb = (calibration_data_buffer[16] << 8) | calibration_data_buffer[17];
   int16_t mc = (calibration_data_buffer[18] << 8) | calibration_data_buffer[19];
   int16_t md = (calibration_data_buffer[20] << 8) | calibration_data_buffer[21];
-
-  // ----------------------------------------------------------------------------------
-  // int16_t ac1 = 408;
-  // int16_t ac2 = -72;
-  // int16_t ac3 = -14383;
-  // uint16_t ac4 = 32741;
-  // uint16_t ac5 = 32757;
-  // uint16_t ac6 = 23153;
-  // int16_t b1 = 6190;
-  // int16_t b2 = 4;
-  // int16_t mb = -32768;
-  // int16_t mc = -8711;
-  // int16_t md = 2868;
-  
-  // int32_t ut = 27898;
-  // int32_t up = 23843;
-  // ----------------------------------------------------------------------------------
 
   // configure sampling mode
   uint8_t oversampling_setting = 0;
@@ -97,8 +97,25 @@ void application(resource_list& p_map)
     // read and store the pressure sensor data
     std::array<hal::byte, 3> UP_buffer;
     hal::write_then_read(i2c, device_address, read_address_payload, UP_buffer, hal::never_timeout());
-    int32_t up = ((UP_buffer[0] << 16) | (UP_buffer[1] << 8) | UP_buffer[0]) >> (8 - oversampling_setting);
+    int32_t up = ((UP_buffer[0] << 16) | (UP_buffer[1] << 8) | UP_buffer[2]) >> (8 - oversampling_setting);
     hal::print<64>(console, "up = %i\n", up);
+
+    // ----------------------------------------------------------------------------------
+    ac1 = 408;
+    ac2 = -72;
+    ac3 = -14383;
+    ac4 = 32741;
+    ac5 = 32757;
+    ac6 = 23153;
+    b1 = 6190;
+    b2 = 4;
+    mb = -32768;
+    mc = -8711;
+    md = 2868;
+    
+    ut = 27898;
+    up = 23843;
+    // ----------------------------------------------------------------------------------
 
     // convert the raw temperature data into Celsius in steps of 0.1°C
     int32_t x1, x2, b5, t;

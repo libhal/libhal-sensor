@@ -23,6 +23,7 @@ libhal_test_and_make_library(
   src/imu/mpu6050.cpp
   src/temperature/tmp102.cpp
   src/multi/mpl3115a2.cpp
+  src/multi/bmp180.cpp
 
   TEST_SOURCES
   tests/imu/mpu6050.test.cpp

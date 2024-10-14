@@ -18,6 +18,7 @@ project(demos LANGUAGES CXX)
 
 libhal_build_demos(
   DEMOS
+  bmp180
   mpu6050
   mpl3115a2
   icm20948
