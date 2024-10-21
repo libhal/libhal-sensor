@@ -20,74 +20,31 @@
 
 void application(resource_list& p_map)
 {
-    using namespace std::chrono_literals;
-    using namespace hal::literals;
+  using namespace std::chrono_literals;
+  using namespace hal::literals;
 
-    auto& clock = *p_map.clock.value();
-    auto& console = *p_map.console.value();
-    auto& i2c = *p_map.i2c.value();
+  auto& clock = *p_map.clock.value();
+  auto& console = *p_map.console.value();
+  auto& i2c = *p_map.i2c.value();
 
-    hal::print(console, "BMP180 Application Starting...\n\n");
-    hal::sensor::bmp180 bmp(i2c, clock);
+  hal::print(console, "BMP180 Application Starting...\n\n");
+  hal::sensor::bmp180 bmp(i2c);
 
-    hal::print(
-        console,
-        "Testing sensor reset...\n\n");
-    bmp.reset();
+  hal::print(console, "Testing sensor reset...\n\n");
+  bmp.reset();
 
-    hal::print(
-        console,
-        "--------------------------------\n");
+  while (true) {
+    hal::print(console, "Doing temperature readout...\n");
+    auto temperature = bmp.temperature();
+    hal::print<64>(console, "Temperature: %.2f°C \n\n", temperature);
 
-    int counter = 0;
-    while (true) {
-        hal::print(
-        console,
-        "Doing temperature readout...\n");
-
-        auto temperature = bmp.temperature();
-        hal::print<64>(console,
-                    "Temperature: %f°C \n\n",
-                    temperature);
-        hal::print(
-        console,
-        "Doing pressure readout...\n");
-        
-        auto pressure = bmp.pressure(1) / 1000;
-        hal::print<64>(console,
-                    "Pressure: %fkPa \n\n",
-                    pressure);
-
-        hal::print<64>(
-        console,
-        "Updating oversampling setting to mode %i\n",
-        counter);
-
-        switch(counter) {
-            case 0:
-                bmp.update_oversampling_rate(hal::sensor::bmp180::oversampling_rate::ulta_low_power_mode_4500us);
-                break;
-
-            case 1:
-                bmp.update_oversampling_rate(hal::sensor::bmp180::oversampling_rate::standard_mode_7500us);   
-                break;
-
-            case 2:
-                bmp.update_oversampling_rate(hal::sensor::bmp180::oversampling_rate::high_resolution_mode_13500us);
-                break;
-
-            case 3:
-                bmp.update_oversampling_rate(hal::sensor::bmp180::oversampling_rate::ultra_high_resolution_mode_25500us);
-                break;
-
-            default:
-                bmp.update_oversampling_rate(hal::sensor::bmp180::oversampling_rate::ulta_low_power_mode_4500us);
-                break;
-        }
-        counter = (counter == 3) ? 0 : counter + 1;
-
-        hal::print(
-        console,
-        "--------------------------------\n");
-    }
+    hal::print(console,
+               "Doing pressure + temperature readout (10 samples)...\n");
+    auto pressure = bmp.pressure(10);
+    hal::print<64>(console,
+                   "Pressure: %.2fPa, Temperature: %.2f°C \n\n",
+                   pressure.pressure,
+                   pressure.temperature);
+    hal::delay(clock, 500ms);
+  }
 }

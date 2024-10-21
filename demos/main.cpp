@@ -74,3 +74,11 @@ int main()
   // Terminate if the code reaches this point.
   std::terminate();
 }
+
+extern "C"
+{
+  // This gets rid of an issue with libhal-exceptions in Debug mode.
+  void __assert_func()
+  {
+  }
+}

@@ -17,64 +17,55 @@
 #include <cstdint>
 
 #include <libhal/i2c.hpp>
-#include <libhal/steady_clock.hpp>
-#include <libhal/timeout.hpp>
 #include <libhal/units.hpp>
 
 namespace hal::sensor {
 
-class bmp180 
+class bmp180
 {
 public:
-
-enum class oversampling_rate : hal::byte
-{
+  enum class oversampling_rate : hal::byte
+  {
     ulta_low_power_mode_4500us = 0x00,
     standard_mode_7500us = 0x01,
     high_resolution_mode_13500us = 0x02,
     ultra_high_resolution_mode_25500us = 0x03,
-};
+  };
 
-explicit bmp180(hal::i2c& p_i2c, hal::steady_clock& p_clock, oversampling_rate p_oversampling_setting = oversampling_rate::ulta_low_power_mode_4500us);
+  struct pressure_results
+  {
+    hal::celsius temperature;
+    float pressure;
+  };
 
-void update_oversampling_rate(oversampling_rate p_oversampling_setting);
+  explicit bmp180(hal::i2c& p_i2c,
+                  oversampling_rate p_oversampling_setting =
+                    oversampling_rate::ulta_low_power_mode_4500us);
 
-[[nodiscard]] hal::celsius temperature(/*timeout param*/);
+  [[nodiscard]] hal::celsius temperature();
 
-[[nodiscard]] float pressure(int sample_amount = 1/*timeout param*/);
+  [[nodiscard]] pressure_results pressure(int sample_amount = 1);
 
-void reset(/*timeout param*/);
+  void reset();
 
 private:
-
-// specify naming reason
-struct calibration_coefficients {
+  struct calibration_coefficients
+  {
     std::int16_t ac1{}, ac2{}, ac3{};
     std::uint16_t ac4{}, ac5{}, ac6{};
     std::int16_t b1{}, b2{};
     std::int16_t mb{}, mc{}, md{};
+  };
+
+  hal::i2c* m_i2c;
+
+  oversampling_rate m_oversampling_setting;
+
+  int m_maximum_samples;
+
+  calibration_coefficients m_calibration_data;
+
+  static constexpr hal::byte m_address = 0b111'0111;
 };
 
-struct computation_variables {
-    std::int32_t x1, x2, x3;
-    std::int32_t b3, b5, b6;
-    std::uint32_t b4, b7;
-    std::int32_t temperature, pressure;
-};
-
-hal::i2c* m_i2c;
-
-hal::steady_clock* m_clock;
-
-oversampling_rate m_oversampling_setting;
-
-calibration_coefficients m_calibration_data;
-
-computation_variables m_computation_variables;
-
-static constexpr hal::byte m_address = 0b111'0111;
-};
-
-
-
-} // namespace hal::sensor
+}  // namespace hal::sensor
