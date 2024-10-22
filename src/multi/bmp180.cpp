@@ -165,9 +165,7 @@ bmp180::bmp180(hal::i2c& p_i2c, oversampling_rate p_oversampling_setting)
     uint16_t verify_word =
       (calibration_data_buffer[i] << 8) | calibration_data_buffer[i + 1];
     if (verify_word == 0x0000 || verify_word == 0xFFFF) {
-      // wasnt sure what exception to throw here, datasheet said if this
-      // condition occurs, then something wrong with data communication
-      hal::safe_throw(hal::unknown(this));
+      hal::safe_throw(hal::io_error(this));
     }
   }
 
@@ -213,7 +211,7 @@ hal::celsius bmp180::temperature()
 bmp180::pressure_results bmp180::pressure(int sample_amount)
 {
   // clamp sample amount to determined maximum
-  std::clamp(sample_amount, 1, m_maximum_samples);
+  sample_amount = std::clamp(sample_amount, 1, m_maximum_samples);
 
   computation_variables variables;
   // run helper function which computes the temperature and b5
