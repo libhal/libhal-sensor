@@ -18,10 +18,10 @@ project(demos LANGUAGES CXX)
 
 libhal_build_demos(
   DEMOS
-  bmp180
-  mpu6050
-  mpl3115a2
+  # bmp180
   icm20948
+  mpl3115a2
+  mpu6050
   tmp102
 
   INCLUDES
