@@ -28,23 +28,23 @@ void application(resource_list& p_map)
   auto& i2c = *p_map.i2c.value();
 
   hal::print(console, "BMP180 Application Starting...\n\n");
-  hal::sensor::bmp180 bmp(i2c);
+  hal::sensor::bmp180 bmp(i2c, hal::sensor::bmp180::oversampling_rate::standard_mode_7500us);
 
   hal::print(console, "Testing sensor reset...\n\n");
   bmp.reset();
 
   while (true) {
     hal::print(console, "Doing temperature readout...\n");
-    auto temperature = bmp.temperature();
-    hal::print<64>(console, "Temperature: %.2f°C \n\n", temperature);
+    auto temperature_result = bmp.temperature();
+    hal::print<64>(console, "Temperature: %.2f°C \n\n", temperature_result);
 
     hal::print(console,
-               "Doing pressure + temperature readout (10 samples)...\n");
-    auto pressure = bmp.pressure(10);
+               "Doing pressure + temperature readout (5 samples)...\n");
+    auto pressure_result = bmp.pressure(5);
     hal::print<64>(console,
                    "Pressure: %.2fPa, Temperature: %.2f°C \n\n",
-                   pressure.pressure,
-                   pressure.temperature);
+                   pressure_result.pressure,
+                   pressure_result.temperature);
     hal::delay(clock, 500ms);
   }
 }

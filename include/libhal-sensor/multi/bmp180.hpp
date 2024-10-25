@@ -24,13 +24,12 @@ namespace hal::sensor {
 /**
  * @brief Driver for the BMP180 barometric pressure/temperature sensor
  */
-
 class bmp180
 {
 public:
   /**
-   * @brief Oversampling rate defined with the mode names as well as sample
-   * fetch times.
+   * @brief Stores the oversampling rate which is defined with the mode names as
+   * well as sample fetch times.
    */
   enum class oversampling_rate : hal::byte
   {
@@ -46,11 +45,12 @@ public:
 
   /**
    * @brief Stores the temperature and pressure data that are both found when
-   * doing the pressure()
+   * calling pressure().
    */
   struct pressure_results
   {
     hal::celsius temperature;
+    // Pressure is in units of Pascals
     float pressure;
   };
 
@@ -58,34 +58,49 @@ public:
    * @brief Construct a bmp180 driver
    *
    * @param p_i2c - The driver for the SPI bus the BMP180 is connected to.
-   * @param p_oversampling_setting - The specified oversampling setting which
-   * sets the amount of internal samples the sensor takes at each request. This
-   * cannot be changed after the object is constructed.
+   * @param p_oversampling_setting - The specified oversampling setting. When
+   * the sensor is requested for a single pressure sample, this setting
+   * determines how many internal samples the sensor takes and averages before
+   * returning the singular sample. The higher the oversampling rate, the less
+   * RMS noise from the sensor.
+   * ulta_low_power_mode_4500us = 3 internal samples by sensor
+   * standard_mode_7500us = 5 internal samples by sensor
+   * high_resolution_mode_13500us = 9 internal samples by sensor
+   * ultra_high_resolution_mode_25500us = 17 internal samples by sensor
    * @throws hal::no_such_device - when an invalid BMP180 device is detected.
    * BMP180 devices have a read-only ID register which allows a microcontroller
    * to determine what device it is connected to. This register will be read and
    * if it does not match the expected value, this exception is thrown.
    * @throws hal::io_error - when something is wrong with the data
-   * communication. The calibration data that the sensor uses need to all have
+   * communication. The calibration data that the sensor uses needs to all have
    * non-boundary values, if any are 0x0000 or 0xFFFF then this is thrown.
    */
   explicit bmp180(hal::i2c& p_i2c,
-                  oversampling_rate p_oversampling_setting =
-                    oversampling_rate::ulta_low_power_mode_4500us);
+         oversampling_rate p_oversampling_setting =
+           oversampling_rate::ulta_low_power_mode_4500us);
 
   /**
-   * @brief Takes a temperature reading.
+   * @brief Reads the temperature
    *
-   * @return The temperature in hal::celsius.
+   * @returns the temperature in celsius.
    */
   [[nodiscard]] hal::celsius temperature();
 
   /**
    * @brief Takes a pressure reading
    *
-   * @param sample_amount - The amount of samples to take. This is different
-   * from the internal amount of samples the sensor does with the oversampling
-   * setting.
+   * @param sample_amount - The amount of samples to take. This differs from the
+   * oversampling setting because the oversampling setting describes how many
+   * internal samples the sensor takes and averages before returning a single
+   * pressure sample when requested. This setting takes x amount of those
+   * returned singular samples, and then averages them for greater accuracy.
+   * Since the sensor has a peak current of 650uA, and each singular sample
+   * varies in both time and current consumption due to the oversampling
+   * setting, this parameter is clamped to various maximum sample_amount's
+   * ulta_low_power_mode_4500us = 214 samples
+   * standard_mode_7500us = 128 samples
+   * high_resolution_mode_13500us = 72 samples
+   * ultra_high_resolution_mode_25500us = 38 samples
    * @return pressure_results which contains the pressure and temperature
    */
   [[nodiscard]] pressure_results pressure(int sample_amount = 1);
@@ -103,6 +118,9 @@ private:
    */
   struct calibration_coefficients
   {
+    // The names of the calibration values are taken directly from the
+    // datasheet. The datasheet does not explain what these names mean, so we
+    // keep the names as they are defined.
     std::int16_t ac1{}, ac2{}, ac3{};
     std::uint16_t ac4{}, ac5{}, ac6{};
     std::int16_t b1{}, b2{};
@@ -110,14 +128,14 @@ private:
   };
   /// The I2C peripheral used for communication with the device.
   hal::i2c* m_i2c;
+  /// The address the device uses with i2c
+  static constexpr hal::byte m_address = 0b111'0111;
   /// The calibration data thats unique to this sensor
   calibration_coefficients m_calibration_data;
   /// The oversampling rate for the sensors internal samples
   oversampling_rate m_oversampling_setting;
-  // The maximum amount of samples per second with the given oversampling rate
+  /// The maximum amount of samples per second with the given oversampling rate
   int m_maximum_samples;
-  // The address the device uses with i2c
-  static constexpr hal::byte m_address = 0b111'0111;
 };
 
 }  // namespace hal::sensor
