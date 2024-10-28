@@ -28,7 +28,7 @@ void application(resource_list& p_map)
   auto& i2c = *p_map.i2c.value();
 
   hal::print(console, "MPU6050 Application Starting...\n");
-  hal::sensor::mpu6050 mpu(i2c, 0x68);
+  hal::sensor::mpu6050 mpu(i2c);
 
   while (true) {
     hal::print(
