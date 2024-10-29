@@ -1,5 +1,7 @@
 #include <libhal-sensor/multi/bmp180.hpp>
 
+#include "bmp180_internal.hpp"
+
 #include <array>
 
 #include <libhal-util/bit.hpp>
@@ -11,8 +13,8 @@ using namespace std::literals;
 namespace hal::sensor {
 namespace {
 
-// Functions for creating arrays containing the different register addresses in
-// their payloads.
+// Helper functions for creating arrays containing the different register
+// addresses in their payloads.
 auto device_id_register()
 {
   return std::to_array<hal::byte>({ 0xD0 });
@@ -33,32 +35,14 @@ auto uncompensated_output_data_register()
   return std::to_array<hal::byte>({ 0xF6 });
 }
 
-// Function that creates an array containing the address and message for sensor
-// reset.
+// Helper function that creates an array containing the address and message for
+// sensor reset.
 auto soft_reset_config()
 {
   hal::byte reset_address = 0xE0;
   hal::byte reset_setting = 0xB6;
-  return std::to_array<hal::byte>({reset_address, reset_setting});
+  return std::to_array<hal::byte>({ reset_address, reset_setting });
 }
-
-// Struct to hold the computation variables. The names of the computation
-// variables are taken directly from the datasheet. The datasheet does not
-// explain what these names mean, so we keep the names as they are defined.
-struct computation_variables
-{
-  std::int32_t x1, x2, x3;
-  std::int32_t b3, b5, b6;
-  std::uint32_t b4, b7;
-  std::int32_t temperature, pressure;
-};
-
-// Struct to hold temperature helper function results.
-struct temperature_results
-{
-  hal::celsius temperature;
-  std::int32_t b5;
-};
 
 // Helper function to spin until data conversion is complete.
 void wait_for_conversion(hal::i2c* p_i2c, hal::byte p_address)
@@ -67,14 +51,21 @@ void wait_for_conversion(hal::i2c* p_i2c, hal::byte p_address)
   while (conversion_finished == 0) {
     std::array<hal::byte, 1> buffer;
     hal::write_then_read(*p_i2c,
-                       p_address,
-                       control_measurement_register(),
-                       buffer,
-                       hal::never_timeout());
+                         p_address,
+                         control_measurement_register(),
+                         buffer,
+                         hal::never_timeout());
     constexpr auto conversion_status_bit = hal::bit_mask::from(5);
     conversion_finished = !(hal::bit_extract<conversion_status_bit>(buffer[0]));
   }
 }
+
+// Struct to hold temperature helper function results.
+struct temperature_results
+{
+  hal::celsius temperature;
+  std::int32_t b5;
+};
 
 // Helper function that computes and returns both the temperature result, as
 // well as the b5 variable for pressure() to use.
@@ -85,8 +76,6 @@ temperature_results compute_temperature_and_b5(hal::i2c* p_i2c,
                                                std::int16_t p_mc,
                                                std::int16_t p_md)
 {
-  computation_variables variables;
-
   // Tell sensor to start conversion for temperature.
   hal::byte control_setting = 0x2E;
   std::array<hal::byte, 2> sensor_config_buffer = {
@@ -110,13 +99,8 @@ temperature_results compute_temperature_and_b5(hal::i2c* p_i2c,
     (uncompensated_data_buffer[0] << 8) + uncompensated_data_buffer[1];
 
   // Compute the temperature in steps of 0.1C.
-  // These calculations are done the way they are without bit_modify as its
-  // following the exact algorithm for conversion given in figure 4 of the
-  // datasheet.
-  variables.x1 = ((uncompensated_temperature - p_ac6) * p_ac5) >> 15;
-  variables.x2 = (p_mc << 11) / (variables.x1 + p_md);
-  variables.b5 = variables.x1 + variables.x2;
-  variables.temperature = (variables.b5 + 8) >> 4;
+  auto variables = bmp180_internal::calculate_true_temperature(
+    uncompensated_temperature, p_ac5, p_ac6, p_mc, p_md);
 
   // Converting and encapsulating result data to return.
   hal::celsius temperature_in_celsius =
@@ -230,7 +214,7 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
                                                      m_calibration_data.md);
 
   // Prepare buffer to configure the sensor for pressure data gathering.
-  hal::byte oversampling_setting = hal::value(m_oversampling_setting);
+  std::int16_t oversampling_setting = hal::value(m_oversampling_setting);
   hal::byte control_setting = (oversampling_setting << 6) | 0x34;
   std::array<hal::byte, 2> sensor_config_buffer = {
     control_measurement_register()[0], control_setting
@@ -262,41 +246,22 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
     // Accumulate the raw samples together to later find the average.
     summed_uncompensated_pressures += uncompensated_pressure;
   }
-  std::int32_t  average_uncompensated_pressure =
+  std::int32_t average_uncompensated_pressure =
     summed_uncompensated_pressures / sample_amount;
 
   // Convert the raw pressure data into Pascals in steps of 1Pa.
-  // These calculations are done the way they are without bit_modify as its
-  // following the exact algorithm for conversion given in figure 4 of the
-  // datasheet.
-  computation_variables variables;
-  variables.b6 = temperature_data.b5 - 4000;
-  variables.x1 =
-    (m_calibration_data.b2 * ((variables.b6 * variables.b6) >> 12)) >> 11;
-  variables.x2 = (m_calibration_data.ac2 * variables.b6) >> 11;
-  variables.x3 = variables.x1 + variables.x2;
-  variables.b3 =
-    ((((static_cast<std::int32_t>(m_calibration_data.ac1)) * 4 + variables.x3)
-      << oversampling_setting) + 2) >> 2;
-  variables.x1 = (m_calibration_data.ac3 * variables.b6) >> 13;
-  variables.x2 =
-    (m_calibration_data.b1 * ((variables.b6 * variables.b6) >> 12)) >> 16;
-  variables.x3 = ((variables.x1 + variables.x2) + 2) >> 2;
-  variables.b4 = (m_calibration_data.ac4 *
-                  static_cast<std::uint32_t>(variables.x3 + 32768)) >> 15;
-  variables.b7 = (static_cast<std::uint32_t>(average_uncompensated_pressure) -
-                  variables.b3) * (50000 >> oversampling_setting);
-  if (variables.b7 < 0x80000000) {
-    variables.pressure = (variables.b7 * 2) / variables.b4;
-  } else {
-    variables.pressure = (variables.b7 / variables.b4) * 2;
-  }
-  variables.x1 = variables.pressure >> 8;
-  variables.x1 *= variables.x1;
-  variables.x1 = (variables.x1 * 3038) >> 16;
-  variables.x2 = (-7357 * variables.pressure) >> 16;
-  variables.pressure += (variables.x1 + variables.x2 + 3791) >> 4;
+  auto variables =
+    bmp180_internal::calculate_true_pressure(average_uncompensated_pressure,
+                                             oversampling_setting,
+                                             temperature_data.b5,
+                                             m_calibration_data.ac1,
+                                             m_calibration_data.ac2,
+                                             m_calibration_data.ac3,
+                                             m_calibration_data.ac4,
+                                             m_calibration_data.b1,
+                                             m_calibration_data.b2);
 
+  // Converting and encapsulating result data to return.
   float pressure = static_cast<float>(variables.pressure);
   pressure_results pressure_data = { .temperature =
                                        temperature_data.temperature,
@@ -306,6 +271,7 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
 
 void bmp180::reset()
 {
+  // Send reset message
   hal::write(*m_i2c, m_address, soft_reset_config(), hal::never_timeout());
 }
 

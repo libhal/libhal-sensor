@@ -76,8 +76,8 @@ public:
    * non-boundary values, if any are 0x0000 or 0xFFFF then this is thrown.
    */
   explicit bmp180(hal::i2c& p_i2c,
-         oversampling_rate p_oversampling_setting =
-           oversampling_rate::ulta_low_power_mode_4500us);
+                  oversampling_rate p_oversampling_setting =
+                    oversampling_rate::ulta_low_power_mode_4500us);
 
   /**
    * @brief Reads the temperature
