@@ -21,12 +21,14 @@ libhal_test_and_make_library(
   SOURCES
   src/imu/icm20948.cpp
   src/imu/mpu6050.cpp
-  src/temperature/tmp102.cpp
+  src/multi/bmp180.cpp
   src/multi/mpl3115a2.cpp
+  src/temperature/tmp102.cpp
 
   TEST_SOURCES
   tests/imu/mpu6050.test.cpp
   tests/imu/mpu6050.test.cpp
+  tests/multi/bmp180.test.cpp
   tests/temperature/tmp102.test.cpp
   tests/main.test.cpp
 )
