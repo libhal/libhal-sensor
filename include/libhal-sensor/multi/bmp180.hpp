@@ -28,7 +28,7 @@ class bmp180
 {
 public:
   /**
-   * @brief Stores the oversampling rate which is defined with the mode names as
+   * @brief Defines the oversampling rate with names containing the mode as
    * well as sample fetch times.
    */
   enum class oversampling_rate : hal::byte
@@ -62,11 +62,9 @@ public:
    * the sensor is requested for a single pressure sample, this setting
    * determines how many internal samples the sensor takes and averages before
    * returning the singular sample. The higher the oversampling rate, the less
-   * RMS noise from the sensor.
-   * ulta_low_power_mode_4500us = 3 internal samples by sensor
-   * standard_mode_7500us = 5 internal samples by sensor
-   * high_resolution_mode_13500us = 9 internal samples by sensor
-   * ultra_high_resolution_mode_25500us = 17 internal samples by sensor
+   * RMS noise from the sensor. See documentation for `oversampling_rate`
+   * enumeration class to know the internal samples taken for each mode.
+   *
    * @throws hal::no_such_device - when an invalid BMP180 device is detected.
    * BMP180 devices have a read-only ID register which allows a microcontroller
    * to determine what device it is connected to. This register will be read and
@@ -97,10 +95,13 @@ public:
    * Since the sensor has a peak current of 650uA, and each singular sample
    * varies in both time and current consumption due to the oversampling
    * setting, this parameter is clamped to various maximum sample_amount's
-   * ulta_low_power_mode_4500us = 214 samples
-   * standard_mode_7500us = 128 samples
-   * high_resolution_mode_13500us = 72 samples
-   * ultra_high_resolution_mode_25500us = 38 samples
+   *
+   * The maximum samples per oversampling rate setting is as follows:
+   *
+   *     - ulta_low_power_mode_4500us = 214 samples
+   *     - standard_mode_7500us = 128 samples
+   *     - high_resolution_mode_13500us = 72 samples
+   *     - ultra_high_resolution_mode_25500us = 38 samples
    * @return pressure_results which contains the pressure and temperature
    */
   [[nodiscard]] pressure_results pressure(int sample_amount = 1);

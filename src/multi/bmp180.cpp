@@ -15,48 +15,46 @@ namespace {
 
 // Helper functions for creating arrays containing the different register
 // addresses in their payloads.
-auto device_id_register()
+constexpr auto device_id_register()
 {
   return std::to_array<hal::byte>({ 0xD0 });
 }
 
-auto calibration_coefficients_register()
+constexpr auto calibration_coefficients_register()
 {
   return std::to_array<hal::byte>({ 0xAA });
 }
 
-auto control_measurement_register()
+constexpr auto control_measurement_register()
 {
   return std::to_array<hal::byte>({ 0xF4 });
 }
 
-auto uncompensated_output_data_register()
+constexpr auto uncompensated_output_data_register()
 {
   return std::to_array<hal::byte>({ 0xF6 });
 }
 
 // Helper function that creates an array containing the address and message for
 // sensor reset.
-auto soft_reset_config()
+constexpr auto soft_reset_config()
 {
-  hal::byte reset_address = 0xE0;
-  hal::byte reset_setting = 0xB6;
+  constexpr hal::byte reset_address = 0xE0;
+  constexpr hal::byte reset_setting = 0xB6;
   return std::to_array<hal::byte>({ reset_address, reset_setting });
 }
 
 // Helper function to spin until data conversion is complete.
 void wait_for_conversion(hal::i2c* p_i2c, hal::byte p_address)
 {
-  bool conversion_finished = 0;
-  while (conversion_finished == 0) {
-    std::array<hal::byte, 1> buffer;
-    hal::write_then_read(*p_i2c,
+  bool conversion_busy = true;
+  while (conversion_busy) {
+    auto status = hal::write_then_read<1>(*p_i2c,
                          p_address,
                          control_measurement_register(),
-                         buffer,
-                         hal::never_timeout());
+                         hal::never_timeout())[0];
     constexpr auto conversion_status_bit = hal::bit_mask::from(5);
-    conversion_finished = !(hal::bit_extract<conversion_status_bit>(buffer[0]));
+    conversion_busy = hal::bit_extract<conversion_status_bit>(status);
   }
 }
 
@@ -77,7 +75,7 @@ temperature_results compute_temperature_and_b5(hal::i2c* p_i2c,
                                                std::int16_t p_md)
 {
   // Tell sensor to start conversion for temperature.
-  hal::byte control_setting = 0x2E;
+  static constexpr hal::byte control_setting = 0x2E;
   std::array<hal::byte, 2> sensor_config_buffer = {
     control_measurement_register()[0], control_setting
   };
@@ -215,6 +213,11 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
 
   // Prepare buffer to configure the sensor for pressure data gathering.
   std::int16_t oversampling_setting = hal::value(m_oversampling_setting);
+  // Bits 0-4 is the value to set the sensor to pressure measurement.
+  // Bit 5 is to tell the sensor to start a new conversion.
+  // Bits 6-7 is the oversampling setting, which is set at construction.
+  // Therefore 0x34 sets the first 6 bits, and the oversampling setting is OR'd
+  // to set the 2 MSB's to complete the byte.
   hal::byte control_setting = (oversampling_setting << 6) | 0x34;
   std::array<hal::byte, 2> sensor_config_buffer = {
     control_measurement_register()[0], control_setting

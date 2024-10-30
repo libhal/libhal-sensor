@@ -14,7 +14,7 @@
 
 #include <libhal-sensor/multi/bmp180.hpp>
 
-#include "../../src/multi/bmp180_internal.hpp"
+#include "multi/bmp180_internal.hpp"
 
 #include <boost/ut.hpp>
 
