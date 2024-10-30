@@ -21,7 +21,7 @@ struct computation_variables
 // These calculations are done the way they are without bit_modify as its
 // following the exact algorithm for conversion given in figure 4 of the
 // datasheet.
-inline computation_variables calculate_true_temperature(
+constexpr inline computation_variables calculate_true_temperature(
   std::int32_t p_uncompensated_temperature,
   std::uint16_t p_ac5,
   std::uint16_t p_ac6,
@@ -42,7 +42,7 @@ inline computation_variables calculate_true_temperature(
 // These calculations are done the way they are without bit_modify as its
 // following the exact algorithm for conversion given in figure 4 of the
 // datasheet.
-inline computation_variables calculate_true_pressure(
+constexpr inline computation_variables calculate_true_pressure(
   std::int32_t p_uncompensated_pressure,
   std::int16_t p_oversampling_setting,
   std::int32_t p_b5,
