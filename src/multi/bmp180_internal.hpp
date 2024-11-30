@@ -1,8 +1,8 @@
 #pragma once
 
-#include <libhal/units.hpp>
-
 #include <cstdint>
+
+#include <libhal/units.hpp>
 
 namespace hal::sensor::bmp180_internal {
 

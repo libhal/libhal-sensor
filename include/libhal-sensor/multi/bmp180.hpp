@@ -138,5 +138,4 @@ private:
   /// The maximum amount of samples per second with the given oversampling rate
   int m_maximum_samples;
 };
-
 }  // namespace hal::sensor

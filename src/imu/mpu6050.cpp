@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include <libhal-sensor/imu/mpu6050.hpp>
-
 #include <libhal-util/bit.hpp>
 #include <libhal-util/i2c.hpp>
 #include <libhal-util/map.hpp>

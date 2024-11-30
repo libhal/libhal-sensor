@@ -1,7 +1,6 @@
-#include <libhal-sensor/multi/mpl3115a2.hpp>
-
 #include <array>
 
+#include <libhal-sensor/multi/mpl3115a2.hpp>
 #include <libhal-util/i2c.hpp>
 #include <libhal/error.hpp>
 
