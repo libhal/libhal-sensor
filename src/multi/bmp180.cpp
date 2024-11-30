@@ -1,13 +1,12 @@
-#include <libhal-sensor/multi/bmp180.hpp>
-
-#include "bmp180_internal.hpp"
-
 #include <array>
 
+#include <libhal-sensor/multi/bmp180.hpp>
 #include <libhal-util/bit.hpp>
 #include <libhal-util/enum.hpp>
 #include <libhal-util/i2c.hpp>
 #include <libhal/error.hpp>
+
+#include "bmp180_internal.hpp"
 
 using namespace std::literals;
 namespace hal::sensor {
@@ -50,9 +49,9 @@ void wait_for_conversion(hal::i2c* p_i2c, hal::byte p_address)
   bool conversion_busy = true;
   while (conversion_busy) {
     auto status = hal::write_then_read<1>(*p_i2c,
-                         p_address,
-                         control_measurement_register(),
-                         hal::never_timeout())[0];
+                                          p_address,
+                                          control_measurement_register(),
+                                          hal::never_timeout())[0];
     constexpr auto conversion_status_bit = hal::bit_mask::from(5);
     conversion_busy = hal::bit_extract<conversion_status_bit>(status);
   }
