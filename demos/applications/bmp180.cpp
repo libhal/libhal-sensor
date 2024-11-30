@@ -28,7 +28,8 @@ void application(resource_list& p_map)
   auto& i2c = *p_map.i2c.value();
 
   hal::print(console, "BMP180 Application Starting...\n\n");
-  hal::sensor::bmp180 bmp(i2c, hal::sensor::bmp180::oversampling_rate::standard_mode_7500us);
+  hal::sensor::bmp180 bmp(
+    i2c, hal::sensor::bmp180::oversampling_rate::standard_mode_7500us);
 
   hal::print(console, "Testing sensor reset...\n\n");
   bmp.reset();
