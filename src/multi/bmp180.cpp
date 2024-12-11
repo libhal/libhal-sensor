@@ -64,14 +64,19 @@ struct temperature_results
   std::int32_t b5;
 };
 
+struct comput_temp_param
+{
+  std::uint16_t ac5;
+  std::uint16_t ac6;
+  std::int16_t mc;
+  std::int16_t md;
+};
+
 // Helper function that computes and returns both the temperature result, as
 // well as the b5 variable for pressure() to use.
 temperature_results compute_temperature_and_b5(hal::i2c* p_i2c,
                                                hal::byte p_address,
-                                               std::uint16_t p_ac5,
-                                               std::uint16_t p_ac6,
-                                               std::int16_t p_mc,
-                                               std::int16_t p_md)
+                                               comput_temp_param p_param)
 {
   // Tell sensor to start conversion for temperature.
   static constexpr hal::byte control_setting = 0x2E;
@@ -96,8 +101,12 @@ temperature_results compute_temperature_and_b5(hal::i2c* p_i2c,
     (uncompensated_data_buffer[0] << 8) + uncompensated_data_buffer[1];
 
   // Compute the temperature in steps of 0.1C.
-  auto variables = bmp180_internal::calculate_true_temperature(
-    uncompensated_temperature, p_ac5, p_ac6, p_mc, p_md);
+  auto variables =
+    bmp180_internal::calculate_true_temperature(uncompensated_temperature,
+                                                p_param.ac5,
+                                                p_param.ac6,
+                                                p_param.mc,
+                                                p_param.md);
 
   // Converting and encapsulating result data to return.
   hal::celsius temperature_in_celsius =
@@ -162,28 +171,38 @@ bmp180::bmp180(hal::i2c& p_i2c, oversampling_rate p_oversampling_setting)
 
   // Take the raw calibration data and convert it into the appropriate
   // variables.
-  m_calibration_data.ac1 =
-    (calibration_data_buffer[0] << 8) | calibration_data_buffer[1];
-  m_calibration_data.ac2 =
-    (calibration_data_buffer[2] << 8) | calibration_data_buffer[3];
-  m_calibration_data.ac3 =
-    (calibration_data_buffer[4] << 8) | calibration_data_buffer[5];
-  m_calibration_data.ac4 =
-    (calibration_data_buffer[6] << 8) | calibration_data_buffer[7];
-  m_calibration_data.ac5 =
-    (calibration_data_buffer[8] << 8) | calibration_data_buffer[9];
-  m_calibration_data.ac6 =
-    (calibration_data_buffer[10] << 8) | calibration_data_buffer[11];
-  m_calibration_data.b1 =
-    (calibration_data_buffer[12] << 8) | calibration_data_buffer[13];
-  m_calibration_data.b2 =
-    (calibration_data_buffer[14] << 8) | calibration_data_buffer[15];
-  m_calibration_data.mb =
-    (calibration_data_buffer[16] << 8) | calibration_data_buffer[17];
-  m_calibration_data.mc =
-    (calibration_data_buffer[18] << 8) | calibration_data_buffer[19];
-  m_calibration_data.md =
-    (calibration_data_buffer[20] << 8) | calibration_data_buffer[21];
+  m_calibration_data.ac1 = static_cast<std::int16_t>(
+    (calibration_data_buffer[0] << 8) | calibration_data_buffer[1]);
+
+  m_calibration_data.ac2 = static_cast<std::int16_t>(
+    (calibration_data_buffer[2] << 8) | calibration_data_buffer[3]);
+
+  m_calibration_data.ac3 = static_cast<std::int16_t>(
+    (calibration_data_buffer[4] << 8) | calibration_data_buffer[5]);
+
+  m_calibration_data.ac4 = static_cast<std::int16_t>(
+    (calibration_data_buffer[6] << 8) | calibration_data_buffer[7]);
+
+  m_calibration_data.ac5 = static_cast<std::int16_t>(
+    (calibration_data_buffer[8] << 8) | calibration_data_buffer[9]);
+
+  m_calibration_data.ac6 = static_cast<std::int16_t>(
+    (calibration_data_buffer[10] << 8) | calibration_data_buffer[11]);
+
+  m_calibration_data.b1 = static_cast<std::int16_t>(
+    (calibration_data_buffer[12] << 8) | calibration_data_buffer[13]);
+
+  m_calibration_data.b2 = static_cast<std::int16_t>(
+    (calibration_data_buffer[14] << 8) | calibration_data_buffer[15]);
+
+  m_calibration_data.mb = static_cast<std::int16_t>(
+    (calibration_data_buffer[16] << 8) | calibration_data_buffer[17]);
+
+  m_calibration_data.mc = static_cast<std::int16_t>(
+    (calibration_data_buffer[18] << 8) | calibration_data_buffer[19]);
+
+  m_calibration_data.md = static_cast<std::int16_t>(
+    (calibration_data_buffer[20] << 8) | calibration_data_buffer[21]);
 }
 
 hal::celsius bmp180::temperature()
@@ -191,10 +210,10 @@ hal::celsius bmp180::temperature()
   // Run helper function which computes the temperature and b5.
   auto temperature_data = compute_temperature_and_b5(m_i2c,
                                                      m_address,
-                                                     m_calibration_data.ac5,
-                                                     m_calibration_data.ac6,
-                                                     m_calibration_data.mc,
-                                                     m_calibration_data.md);
+                                                     { m_calibration_data.ac5,
+                                                       m_calibration_data.ac6,
+                                                       m_calibration_data.mc,
+                                                       m_calibration_data.md });
 
   // Return just the temperature data.
   return temperature_data.temperature;
@@ -205,10 +224,10 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
   // Run helper function which computes the temperature and b5.
   auto temperature_data = compute_temperature_and_b5(m_i2c,
                                                      m_address,
-                                                     m_calibration_data.ac5,
-                                                     m_calibration_data.ac6,
-                                                     m_calibration_data.mc,
-                                                     m_calibration_data.md);
+                                                     { m_calibration_data.ac5,
+                                                       m_calibration_data.ac6,
+                                                       m_calibration_data.mc,
+                                                       m_calibration_data.md });
 
   // Prepare buffer to configure the sensor for pressure data gathering.
   std::int16_t oversampling_setting = hal::value(m_oversampling_setting);
@@ -264,7 +283,7 @@ bmp180::pressure_results bmp180::pressure(int sample_amount)
                                              m_calibration_data.b2);
 
   // Converting and encapsulating result data to return.
-  float pressure = static_cast<float>(variables.pressure);
+  auto pressure = static_cast<float>(variables.pressure);
   pressure_results pressure_data = { .temperature =
                                        temperature_data.temperature,
                                      .pressure = pressure };
