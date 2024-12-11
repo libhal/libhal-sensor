@@ -251,8 +251,13 @@ public:
   void set_acc_range(acc_range p_acc_range);
   void set_acc_dlpf(digital_lowpass_filter p_dlpf);
   void set_acc_sample_rate_div(uint16_t p_acc_spl_rate_div);
-  void enable_gyr(bool p_enGyr);
-  void set_gyro_range(gyro_range gyroRange);
+  void enable_gyro(bool p_enable_gyro);
+  [[deprecated("Use the API `enable_gyro()` with a full name.")]]
+  void enable_gyr(bool p_enable_gyro)
+  {
+    enable_gyro(p_enable_gyro);
+  }
+  void set_gyro_range(gyro_range p_gyro_range);
   void set_gyro_dlpf(digital_lowpass_filter p_dlpf);
   void set_gyro_sample_rate_div(hal::byte p_gyro_spl_rate_div);
   void set_temp_dlpf(digital_lowpass_filter p_dlpf);
@@ -278,13 +283,32 @@ public:
 
 private:
   void set_clock_auto_select();
-  void switch_bank(hal::byte p_newBank);
-  void write_register8(hal::byte p_bank, hal::byte p_reg, hal::byte p_val);
-  void write_register16(hal::byte p_bank, hal::byte reg, int16_t p_val);
+  void switch_bank(hal::byte p_new_bank);
 
-  [[nodiscard]] hal::byte read_register8(hal::byte p_bank, hal::byte p_reg);
-  [[nodiscard]] std::uint16_t read_register16(hal::byte p_bank,
-                                              hal::byte p_reg);
+  struct write8_param
+  {
+    hal::byte bank;
+    hal::byte reg;
+    hal::byte val;
+  };
+
+  struct write16_param
+  {
+    hal::byte bank;
+    hal::byte reg;
+    std::uint16_t val;
+  };
+  void write_register8(write8_param p_param);
+  void write_register16(write16_param p_param);
+
+  struct read_param
+  {
+    hal::byte bank;
+    hal::byte reg;
+  };
+
+  [[nodiscard]] hal::byte read_register8(read_param p_param);
+  [[nodiscard]] std::uint16_t read_register16(read_param p_param);
   void enable_mag_data_read(hal::byte p_reg, hal::byte p_bytes);
 
   void reset_icm20948();
