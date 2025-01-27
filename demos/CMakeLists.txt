@@ -29,9 +29,7 @@ libhal_build_demos(
 
   PACKAGES
   libhal-sensor
-  libhal-soft
 
   LINK_LIBRARIES
   libhal::sensor
-  libhal::soft
 )
