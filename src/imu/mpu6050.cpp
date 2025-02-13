@@ -55,15 +55,26 @@ mpu6050::mpu6050(hal::i2c& p_i2c, hal::byte p_device_address)
   : m_i2c(&p_i2c)
   , m_address(p_device_address)
 {
-  static constexpr hal::byte expected_device_id = 0x68;
+  constexpr std::array<hal::u8, 2> expected_ids = {
+    0x68,  // real mpu6050 who_am_i value
+    0x72,  // fake mpu6050 who_am_i value (but still works)
+  };
   // Read out the identity register
-  auto device_id =
+  auto const device_id =
     hal::write_then_read<1>(*m_i2c,
                             m_address,
                             std::array{ hal::sensor::who_am_i_register },
                             hal::never_timeout())[0];
 
-  if (device_id != expected_device_id) {
+  bool id_verified = false;
+  for (auto const& id : expected_ids) {
+    if (device_id == id) {
+      id_verified = true;
+      break;
+    }
+  }
+
+  if (not id_verified) {
     hal::safe_throw(hal::no_such_device(m_address, this));
   }
 
