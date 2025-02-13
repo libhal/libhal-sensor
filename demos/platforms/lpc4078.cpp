@@ -24,16 +24,21 @@
 
 #include <resource_list.hpp>
 
-resource_list initialize_platform()
+void initialize_platform(resource_list& p_resources)
 {
   using namespace hal::literals;
 
+  p_resources.reset = []() { hal::cortex_m::reset(); };
   // Set the MCU to the maximum clock speed
   hal::lpc40::maximum(12.0_MHz);
 
   // Create a hardware counter
   static hal::cortex_m::dwt_counter counter(
     hal::lpc40::get_frequency(hal::lpc40::peripheral::cpu));
+  p_resources.clock = &counter;
+
+  static hal::lpc40::output_pin led(1, 10);
+  p_resources.status_led = &led;
 
   static std::array<hal::byte, 64> uart0_buffer{};
   // Get and initialize UART0 for UART based logging
@@ -42,15 +47,8 @@ resource_list initialize_platform()
                                 hal::serial::settings{
                                   .baud_rate = 115200,
                                 });
+  p_resources.console = &uart0;
 
-  static hal::lpc40::output_pin led(1, 10);
   static hal::lpc40::i2c i2c(2);
-
-  return {
-    .reset = []() { hal::cortex_m::reset(); },
-    .console = &uart0,
-    .clock = &counter,
-    .status_led = &led,
-    .i2c = &i2c,
-  };
+  p_resources.i2c = &i2c;
 }

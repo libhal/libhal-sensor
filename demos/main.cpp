@@ -23,35 +23,37 @@ resource_list resources{};
 
 [[noreturn]] void terminate_handler() noexcept
 {
-  if (not resources.status_led && not resources.status_led) {
-    // spin here until debugger is connected
+  if (resources.console) {
+    hal::print(*resources.console.value(), "☠️ APPLICATION TERMINATED ☠️\n\n");
+  }
+
+  if (resources.status_led && resources.clock) {
+    auto& led = *resources.status_led.value();
+    auto& clock = *resources.clock.value();
+
     while (true) {
-      continue;
+      using namespace std::chrono_literals;
+      led.level(false);
+      hal::delay(clock, 100ms);
+      led.level(true);
+      hal::delay(clock, 100ms);
+      led.level(false);
+      hal::delay(clock, 100ms);
+      led.level(true);
+      hal::delay(clock, 1000ms);
     }
   }
 
-  // Otherwise, blink the led in a pattern
-
-  auto& led = *resources.status_led.value();
-  auto& clock = *resources.clock.value();
-
+  // spin here forever
   while (true) {
-    using namespace std::chrono_literals;
-    led.level(false);
-    hal::delay(clock, 100ms);
-    led.level(true);
-    hal::delay(clock, 100ms);
-    led.level(false);
-    hal::delay(clock, 100ms);
-    led.level(true);
-    hal::delay(clock, 1000ms);
+    continue;
   }
 }
 
 int main()
 {
   try {
-    resources = initialize_platform();
+    initialize_platform(resources);
   } catch (...) {
     while (true) {
       // halt here and wait for a debugger to connect

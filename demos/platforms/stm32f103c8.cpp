@@ -19,32 +19,40 @@
 #include <libhal-arm-mcu/stm32f1/output_pin.hpp>
 #include <libhal-arm-mcu/stm32f1/uart.hpp>
 #include <libhal-arm-mcu/system_control.hpp>
+#include <libhal-util/bit_bang_i2c.hpp>
 #include <libhal/units.hpp>
 
 #include <resource_list.hpp>
 
-resource_list initialize_platform()
+void initialize_platform(resource_list& p_resources)
 {
   using namespace hal::literals;
+  p_resources.reset = +[]() { hal::cortex_m::reset(); };
 
   // Set the MCU to the maximum clock speed
   hal::stm32f1::maximum_speed_using_internal_oscillator();
 
-  static hal::cortex_m::dwt_counter counter(
+  static hal::cortex_m::dwt_counter steady_clock(
     hal::stm32f1::frequency(hal::stm32f1::peripheral::cpu));
+  p_resources.clock = &steady_clock;
 
   static hal::stm32f1::uart uart1(hal::port<1>,
                                   hal::buffer<128>,
                                   hal::serial::settings{
                                     .baud_rate = 115200,
                                   });
+  p_resources.console = &uart1;
 
   static hal::stm32f1::output_pin led('C', 13);
+  p_resources.status_led = &led;
 
-  return {
-    .reset = +[]() { hal::cortex_m::reset(); },
-    .console = &uart1,
-    .clock = &counter,
-    .status_led = &led,
-  };
+  static hal::stm32f1::output_pin sda_output_pin('B', 7);
+  static hal::stm32f1::output_pin scl_output_pin('B', 6);
+  static hal::bit_bang_i2c bit_bang_i2c(
+    hal::bit_bang_i2c::pins{
+      .sda = &sda_output_pin,
+      .scl = &scl_output_pin,
+    },
+    steady_clock);
+  p_resources.i2c = &bit_bang_i2c;
 }

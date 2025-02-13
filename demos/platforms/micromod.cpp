@@ -16,18 +16,15 @@
 
 #include <resource_list.hpp>
 
-resource_list initialize_platform()
+void initialize_platform(resource_list& p_resources)
 {
   using namespace hal::literals;
 
   hal::micromod::v1::initialize_platform();
 
-  return {
-    .reset = +[]() { hal::micromod::v1::reset(); },
-    .console = &hal::micromod::v1::console(hal::buffer<128>),
-    .clock = &hal::micromod::v1::uptime_clock(),
-    .status_led = &hal::micromod::v1::led(),
-    // TODO(): Add i2c back when mod-stm32f1-v4 supports i2c
-    // .i2c = &i2c,
-  };
+  p_resources.reset = +[]() { hal::micromod::v1::reset(); };
+  p_resources.console = &hal::micromod::v1::console(hal::buffer<128>);
+  p_resources.clock = &hal::micromod::v1::uptime_clock();
+  p_resources.status_led = &hal::micromod::v1::led();
+  p_resources.i2c = &hal::micromod::v1::i2c();
 }
