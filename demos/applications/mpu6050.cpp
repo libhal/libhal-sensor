@@ -40,11 +40,11 @@ void application(resource_list& p_map)
     hal::print(console, "Reading acceleration... \n");
     auto acceleration = mpu.read();
 
-    hal::print<64>(console,
-                   "Scale: 2g \t x = %fg, y = %fg, z = %fg \n",
-                   acceleration.x,
-                   acceleration.y,
-                   acceleration.z);
+    hal::print<128>(console,
+                    "Scale: 2g:\tx = %fg, y = %fg, z = %fg \n",
+                    acceleration.x,
+                    acceleration.y,
+                    acceleration.z);
 
     hal::delay(clock, 500ms);
 
@@ -54,10 +54,10 @@ void application(resource_list& p_map)
 
     mpu.configure_full_scale(hal::sensor::mpu6050::max_acceleration::g4);
     acceleration = mpu.read();
-    hal::print<64>(console,
-                   "Scale: 4g \t x = %fg, y = %fg, z = %fg \n\n",
-                   acceleration.x,
-                   acceleration.y,
-                   acceleration.z);
+    hal::print<128>(console,
+                    "Scale: 4g:\tx = %fg, y = %fg, z = %fg \n\n",
+                    acceleration.x,
+                    acceleration.y,
+                    acceleration.z);
   }
 }
