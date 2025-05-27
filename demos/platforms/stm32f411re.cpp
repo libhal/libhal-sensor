@@ -28,21 +28,22 @@
 void initialize_platform(resource_list& p_resources)
 {
   using namespace hal::literals;
+  using st_peripheral = hal::stm32f411::peripheral;
 
   // Set the MCU to the maximum clock speed
   hal::stm32f411::maximum_speed_using_internal_oscillator();
 
-  auto const cpu_frequency =
-    hal::stm32f411::frequency(hal::stm32f411::peripheral::cpu);
+  auto const cpu_frequency = hal::stm32f411::frequency(st_peripheral::cpu);
   static hal::cortex_m::dwt_counter steady_clock(cpu_frequency);
 
-  static hal::stm32f411::i2c i2c(1,
-                                 hal::i2c::settings{ .clock_rate = 100_kHz });
+  static hal::stm32f411::i2c_manager<st_peripheral::i2c1> i2c1_manager;
+  static auto i2c =
+    i2c1_manager.acquire_i2c(hal::i2c::settings{ .clock_rate = 100_kHz });
 
   static hal::stm32f411::uart uart2(
     hal::port<2>, hal::buffer<128>, { .baud_rate = 115200 });
 
-  static hal::stm32f411::output_pin led(hal::stm32f411::peripheral::gpio_a, 5);
+  static hal::stm32f411::output_pin led(st_peripheral::gpio_a, 5);
 
   p_resources.clock = &steady_clock;
   p_resources.console = &uart2;
