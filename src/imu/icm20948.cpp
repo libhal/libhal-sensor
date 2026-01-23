@@ -152,8 +152,6 @@ icm20948::icm20948(hal::i2c& p_i2c)
   : m_i2c(&p_i2c)
 {
   m_current_bank = 0;
-  reset_icm20948();
-  reset_mag();
   if (auto id = whoami(); id != who_am_i_content) {
     hal::safe_throw(hal::no_such_device(id, this));
   }
