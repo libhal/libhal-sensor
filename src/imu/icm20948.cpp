@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <array>
 #include <cmath>
+
+#include <array>
+#include <chrono>
 
 #include <libhal-sensor/imu/icm20948.hpp>
 #include <libhal-util/i2c.hpp>
+#include <libhal-util/steady_clock.hpp>
 #include <libhal/error.hpp>
+#include <libhal/steady_clock.hpp>
 
 namespace hal::sensor {
 
@@ -183,10 +187,10 @@ icm20948::icm20948(hal::i2c& p_i2c, hal::steady_clock& p_steady_clock)
   m_current_bank = 0;
 
   reset_icm20948();
-  hal::delay(*p_steady_clock, 100ms);
+  hal::delay(p_steady_clock, 100ms);
   set_clock_auto_select();
   sleep(false);
-  hal::delay(*p_steady_clock, 10ms);
+  hal::delay(p_steady_clock, 10ms);
   reset_mag();
 
   std::uint8_t tries = 0;
@@ -196,9 +200,8 @@ icm20948::icm20948(hal::i2c& p_i2c, hal::steady_clock& p_steady_clock)
     if (mag_whoami_ok()) {
       break;
     }
-
-    i2c_master_reset();
-    hal::delay(*p_steady_clock, 10ms);
+    reset_i2c_master();
+    hal::delay(p_steady_clock, 10ms);
   }
 
   if (auto id = whoami(); id != who_am_i_content) {
