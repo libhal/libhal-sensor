@@ -331,9 +331,6 @@ private:
   /* The I2C peripheral used for communication with the device. */
   hal::i2c* m_i2c;
 
-  /* The Clock peripheral is used to provide delay until I2C master is ready. */
-  hal::steady_clock* m_steady_clock;
-
   hal::byte m_current_bank;
   accel_read_t m_acc_offset_val;
   accel_read_t m_acc_corr_factor;
