@@ -224,7 +224,18 @@ public:
    * @brief private constructor for icm20948 objects
    * @param p_i2c The I2C peripheral used for communication with the device.
    */
-  icm20948(hal::i2c& p_i2c);
+  [[deprecated(
+    "Use the constructor with hal::steady_clock instead.")]] icm20948(hal::i2c&
+                                                                        p_i2c);
+
+  /**
+   * @brief private constructor for icm20948 objects
+   * @param p_i2c The I2C peripheral used for communication with the device.
+   * @param p_steady_clock After an ICM reset, the I2C master may not be ready;
+   thus, the Clock peripheral is used to provide delay until I2C master is
+   ready.
+   */
+  icm20948(hal::i2c& p_i2c, hal::steady_clock& p_steady_clock);
 
   void auto_offsets();
 
@@ -252,8 +263,8 @@ public:
   void set_acc_dlpf(digital_lowpass_filter p_dlpf);
   void set_acc_sample_rate_div(uint16_t p_acc_spl_rate_div);
   void enable_gyro(bool p_enable_gyro);
-  [[deprecated("Use the API `enable_gyro()` with a full name.")]]
-  void enable_gyr(bool p_enable_gyro)
+  [[deprecated("Use the API `enable_gyro()` with a full name.")]] void
+  enable_gyr(bool p_enable_gyro)
   {
     enable_gyro(p_enable_gyro);
   }
@@ -278,10 +289,13 @@ public:
   hal::byte check_mag_mode();
   hal::byte whoami_ak09916_wia1_direct();
   hal::byte whoami_ak09916_wia2_direct();
+  [[nodiscard]] bool mag_whoami_ok();
   void set_mag_op_mode(ak09916_op_mode p_op_mode);
   void write_ak09916_register8(hal::byte p_reg, hal::byte p_val);
 
 private:
+  static constexpr std::uint8_t max_magnetometer_starts = 5;
+
   void set_clock_auto_select();
   void switch_bank(hal::byte p_new_bank);
 
@@ -312,6 +326,7 @@ private:
   void enable_mag_data_read(hal::byte p_reg, hal::byte p_bytes);
 
   void reset_icm20948();
+  void reset_i2c_master();
 
   /* The I2C peripheral used for communication with the device. */
   hal::i2c* m_i2c;
