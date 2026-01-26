@@ -15,6 +15,7 @@
 #pragma once
 
 #include <libhal/i2c.hpp>
+#include <libhal/steady_clock.hpp>
 #include <libhal/timeout.hpp>
 #include <libhal/units.hpp>
 
@@ -224,9 +225,8 @@ public:
    * @brief private constructor for icm20948 objects
    * @param p_i2c The I2C peripheral used for communication with the device.
    */
-  [[deprecated(
-    "Use the constructor with hal::steady_clock instead.")]] icm20948(hal::i2c&
-                                                                        p_i2c);
+  [[deprecated("Use the constructor with hal::steady_clock instead.")]]
+  icm20948(hal::i2c& p_i2c);
 
   /**
    * @brief private constructor for icm20948 objects

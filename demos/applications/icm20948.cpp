@@ -41,14 +41,12 @@ void application(resource_list& p_map)
   auto& console = *p_map.console.value();
   auto& i2c = *p_map.i2c.value();
 
-  hal::print(console, "icm Application Starting...\n\n");
+  hal::print(console, "icm20948 Demo Application Starting...\n\n");
   hal::delay(clock, 200ms);
-  hal::sensor::icm20948 icm_device(i2c);
+
+  hal::sensor::icm20948 icm_device(i2c, clock);
 
   hal::delay(clock, 200ms);
-  icm_device.init_mag();
-  hal::delay(clock, 100ms);
-
   icm_device.auto_offsets();
 
   while (true) {
