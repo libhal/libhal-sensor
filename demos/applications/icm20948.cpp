@@ -46,12 +46,6 @@ void application(resource_list& p_map)
   hal::sensor::icm20948 icm_device(i2c);
 
   hal::delay(clock, 200ms);
-  icm_device
-    .reset_mag();  // After an ICM reset, the mag sensor may stop
-                   // responding over I2C master (device not ready). More
-                   // reliable to call reset function outside the constructor
-
-  hal::delay(clock, 200ms);
   icm_device.init_mag();
   hal::delay(clock, 100ms);
 

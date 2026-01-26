@@ -96,7 +96,7 @@ constexpr hal::byte temp_config = 0x53;
 /* Registers ICM20948 USER BANK 3*/
 [[maybe_unused]] constexpr hal::byte i2c_mst_odr_cfg = 0x00;
 [[maybe_unused]] constexpr hal::byte i2c_mst_ctrl = 0x01;
-[[maybe_unused]] constexpr hal::byte i2c_mst_delay_ctrl = 0x02;
+constexpr hal::byte i2c_mst_delay_ctrl = 0x02;
 constexpr hal::byte i2c_slv0_addr = 0x03;
 constexpr hal::byte i2c_slv0_reg = 0x04;
 constexpr hal::byte i2c_slv0_ctrl = 0x05;
@@ -153,6 +153,55 @@ icm20948::icm20948(hal::i2c& p_i2c)
 {
   m_current_bank = 0;
   reset_icm20948();
+  reset_mag();
+  if (auto id = whoami(); id != who_am_i_content) {
+    hal::safe_throw(hal::no_such_device(id, this));
+  }
+
+  m_acc_offset_val.x = 0.0;
+  m_acc_offset_val.y = 0.0;
+  m_acc_offset_val.z = 0.0;
+  m_acc_corr_factor.x = 1.0;
+  m_acc_corr_factor.y = 1.0;
+  m_acc_corr_factor.z = 1.0;
+  m_acc_range_factor = 1.0;
+  m_gyro_offset_val.x = 0.0;
+  m_gyro_offset_val.y = 0.0;
+  m_gyro_offset_val.z = 0.0;
+  m_gyro_range_factor = 1.0;
+
+  sleep(false);
+  enable_acc(true);
+  enable_gyro(true);
+
+  write_register8({ .bank = 2, .reg = odr_align_en, .val = 1 });  // aligns ODR
+}
+
+icm20948::icm20948(hal::i2c& p_i2c, hal::steady_clock& p_steady_clock)
+  : m_i2c(&p_i2c)
+  , m_steady_clock(&p_steady_clock)
+{
+  m_current_bank = 0;
+
+  reset_icm20948();
+  hal::delay(*m_steady_clock, 100ms);
+  set_clock_auto_select();
+  sleep(false);
+  hal::delay(*m_steady_clock, 10ms);
+  reset_mag();
+
+  std::uint8_t tries = 0;
+  while (tries < max_magnetometer_starts) {
+    tries++;
+
+    if (mag_whoami_ok()) {
+      break;
+    }
+
+    i2c_master_reset();
+    hal::delay(*m_steady_clock, 10ms);
+  }
+
   if (auto id = whoami(); id != who_am_i_content) {
     hal::safe_throw(hal::no_such_device(id, this));
   }
@@ -660,5 +709,27 @@ void icm20948::enable_mag_data_read(hal::byte p_reg,   // NOLINT
   // enable read | number of byte
   hal::byte const enable_and_bytes = 0x80 | p_bytes;
   write_register8({ .bank = 3, .reg = i2c_slv0_ctrl, .val = enable_and_bytes });
+}
+
+bool icm20948::mag_whoami_ok()
+{
+  try {
+    enable_bypass_mode();
+
+    auto const wia1 = whoami_ak09916_wia1_direct();
+    auto const wia2 = whoami_ak09916_wia2_direct();
+
+    return (wia1 == static_cast<hal::byte>(ak09916_who_am_i_1)) &&
+           (wia2 == static_cast<hal::byte>(ak09916_who_am_i_2));
+  } catch (std::exception const&) {
+    return false;
+  }
+}
+
+void icm20948::reset_i2c_master()
+{
+  auto ctrl = read_register8({ .bank = 0, .reg = user_ctrl });
+  ctrl |= i2c_mst_delay_ctrl;
+  write_register8({ .bank = 0, .reg = user_ctrl, .val = ctrl });
 }
 }  // namespace hal::sensor
