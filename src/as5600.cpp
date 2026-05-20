@@ -32,6 +32,167 @@ hal::byte as5600::read_register(hal::byte p_register_address)
   return response[0];
 }
 
+uint16_t as5600::zpos()
+{
+  auto const low_byte = read_register(0x02);
+  auto const hi_byte = (read_register(0x01) & 0b1111) /*only take last 4 bits*/;
+
+  return (hi_byte << 8) | low_byte;
+}
+
+uint16_t as5600::mpos()
+{
+  auto const low_byte = read_register(0x04);
+  auto const hi_byte = (read_register(0x03) & 0b1111) /*only take last 4 bits*/;
+
+  return (hi_byte << 8) | low_byte;
+}
+
+uint16_t as5600::max_angle()
+{
+  auto const low_byte = read_register(0x05);
+  auto const hi_byte = (read_register(0x06) & 0b1111) /*only take last 4 bits*/;
+
+  return (hi_byte << 8) | low_byte;
+}
+
+as5600::power_mode_config as5600::power_mode()
+{
+  auto conf_byte = read_register(0x08);
+  conf_byte = conf_byte & 0b11;
+  switch (conf_byte) {
+    case 0b01:
+      return power_mode_config::low_power_mode_1;
+    case 0b10:
+      return power_mode_config::low_power_mode_2;
+    case 0b11:
+      return power_mode_config::low_power_mode_3;
+    default:
+      return power_mode_config::normal_mode;
+  }
+}
+
+as5600::hysteresis_config as5600::hysteresis()
+{
+  auto conf_byte = read_register(0x08);
+  conf_byte = (conf_byte >> 2) & 0b11;
+  switch (conf_byte) {
+    case 0b01:
+      return hysteresis_config::lsb_1;
+    case 0b10:
+      return hysteresis_config::lsb_2;
+    case 0b11:
+      return hysteresis_config::lsb_3;
+    default:
+      return hysteresis_config::off;
+  }
+}
+
+bool as5600::watchdog_enabled()
+{
+  auto conf_byte = read_register(0x07);
+  std::bitset<8> conf_bits{ conf_byte };
+  return conf_bits[5];
+}
+
+void as5600::zpos(uint16_t p_position)
+{
+  hal::byte const hi_byte_base = read_register(0x01) & 0b11110000;
+  hal::byte const low_byte = p_position;
+  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
+  hal::write(
+    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x01, hi_byte, low_byte });
+}
+
+void as5600::mpos(uint16_t p_position)
+{
+  hal::byte const hi_byte_base = read_register(0x03) & 0b11110000;
+  hal::byte const low_byte = p_position;
+  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
+  hal::write(
+    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x03, hi_byte, low_byte });
+}
+
+void as5600::max_angle(uint16_t p_angle)
+{
+  hal::byte hi_byte_base = read_register(0x06) & 0b11110000;
+  hal::byte low_byte = p_angle;
+  hal::byte hi_byte = hi_byte_base | (p_angle >> 8);
+  hal::write(
+    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x06, hi_byte, low_byte });
+}
+
+void as5600::power_mode(as5600::power_mode_config p_power_mode)
+{
+  hal::byte bits = 0b00;
+  switch (p_power_mode) {
+    case power_mode_config::low_power_mode_1:
+      bits = 0b01;
+      break;
+    case power_mode_config::low_power_mode_2:
+      bits = 0b10;
+      break;
+    case power_mode_config::low_power_mode_3:
+      bits = 0b11;
+      break;
+    default:
+      bits = 0b00;
+  }
+
+  auto conf_byte = read_register(0x08);
+  conf_byte = conf_byte & 0b11111100;
+  conf_byte = conf_byte | bits;
+  hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x08, conf_byte });
+}
+
+void as5600::hysteresis(as5600::hysteresis_config p_hysteresis)
+{
+  hal::byte bits = 0b00;
+  switch (p_hysteresis) {
+    case hysteresis_config::lsb_1:
+      bits = 0b0100;
+      break;
+    case hysteresis_config::lsb_2:
+      bits = 0b1000;
+      break;
+    case hysteresis_config::lsb_3:
+      bits = 0b1100;
+      break;
+    default:
+      bits = 0b0000;
+  }
+
+  auto conf_byte = read_register(0x08);
+  conf_byte = conf_byte & 0b11110011;
+  conf_byte = conf_byte | bits;
+  hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x08, conf_byte });
+}
+
+void as5600::watchdog(bool p_enabled)
+{
+  hal::byte conf_byte = read_register(0x07);
+  std::bitset<8> conf_bits{ conf_byte };
+  conf_bits.set(5, p_enabled);
+  conf_byte = static_cast<uint8_t>(conf_bits.to_ulong());
+  hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x07, conf_byte });
+}
+
+uint16_t as5600::raw_angle()
+{
+  auto const low_byte = read_register(0x0D);
+  auto const hi_byte = (read_register(0x0C) & 0b1111) /*only take last 4 bits*/;
+
+  return (hi_byte << 8) | low_byte;
+}
+
+uint16_t as5600::angle()
+{
+  auto const low_byte = read_register(0x0F);
+  auto const hi_byte = (read_register(0x0E) & 0b1111) /*only take last 4 bits*/;
+
+  return (hi_byte << 8) | low_byte;
+}
+
 bool as5600::magnet_detected()
 {
   auto const status_byte = read_register(0x0B);
@@ -53,71 +214,17 @@ bool as5600::magnet_too_weak()
   return status_bits[4];
 }
 
-uint16_t as5600::get_raw_angle()
+uint8_t as5600::auto_gain_control()
 {
-  auto const low_byte = read_register(0x0D);
-  auto const hi_byte = (read_register(0x0C) & 0b1111) /*only take last 4 bits*/;
+  return read_register(0x1A);
+}
+
+uint16_t as5600::magnitude()
+{
+  auto const low_byte = read_register(0x1C);
+  auto const hi_byte = (read_register(0x1B) & 0b1111) /*only take last 4 bits*/;
 
   return (hi_byte << 8) | low_byte;
-}
-
-uint16_t as5600::get_angle()
-{
-  auto const low_byte = read_register(0x0F);
-  auto const hi_byte = (read_register(0x0E) & 0b1111) /*only take last 4 bits*/;
-
-  return (hi_byte << 8) | low_byte;
-}
-
-uint16_t as5600::get_zpos()
-{
-  auto const low_byte = read_register(0x02);
-  auto const hi_byte = (read_register(0x01) & 0b1111) /*only take last 4 bits*/;
-
-  return (hi_byte << 8) | low_byte;
-}
-
-uint16_t as5600::get_mpos()
-{
-  auto const low_byte = read_register(0x04);
-  auto const hi_byte = (read_register(0x03) & 0b1111) /*only take last 4 bits*/;
-
-  return (hi_byte << 8) | low_byte;
-}
-
-uint16_t as5600::get_max_angle()
-{
-  auto const low_byte = read_register(0x05);
-  auto const hi_byte = (read_register(0x06) & 0b1111) /*only take last 4 bits*/;
-
-  return (hi_byte << 8) | low_byte;
-}
-
-void as5600::set_zpos(uint16_t p_position)
-{
-  hal::byte const hi_byte_base = read_register(0x01) & 0b11110000;
-  hal::byte const low_byte = p_position;
-  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
-  hal::write(
-    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x01, hi_byte, low_byte });
-}
-
-void as5600::set_mpos(uint16_t p_position)
-{
-  hal::byte const hi_byte_base = read_register(0x03) & 0b11110000;
-  hal::byte const low_byte = p_position;
-  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
-  hal::write(
-    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x03, hi_byte, low_byte });
-}
-
-void as5600::set_max_angle(uint16_t p_angle)
-{
-  hal::byte hi_byte_base = read_register(0x06) & 0b11110000;
-  hal::byte low_byte = p_angle;
-  hal::byte hi_byte = hi_byte_base | (p_angle >> 8);
-  hal::write(
-    *m_i2c, m_address, std::array<hal::byte, 3>{ 0x06, hi_byte, low_byte });
 }
 
 }  // namespace hal::sensor

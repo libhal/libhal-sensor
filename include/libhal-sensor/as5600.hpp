@@ -21,21 +21,47 @@ namespace hal::sensor {
 class as5600
 {
 public:
+  enum class power_mode_config
+  {
+    normal_mode,  // double check this
+    low_power_mode_1,
+    low_power_mode_2,
+    low_power_mode_3,
+  };
+
+  enum class hysteresis_config
+  {
+    off,
+    lsb_1,
+    lsb_2,
+    lsb_3
+  };
+
   as5600(hal::i2c& p_i2c);
+
+  uint8_t zmco();
+  uint16_t zpos();
+  uint16_t mpos();
+  uint16_t max_angle();
+  power_mode_config power_mode();
+  hysteresis_config hysteresis();
+  bool watchdog_enabled();
+
+  void zpos(uint16_t p_position);
+  void mpos(uint16_t p_position);
+  void max_angle(uint16_t p_angle);
+  void power_mode(power_mode_config p_power_mode);
+  void hysteresis(hysteresis_config p_hysteresis);
+  void watchdog(bool p_enabled);
+
+  uint16_t raw_angle();
+  uint16_t angle();
 
   bool magnet_detected();
   bool magnet_too_strong();
   bool magnet_too_weak();
-  uint16_t get_raw_angle();
-  uint16_t get_angle();
-
-  uint16_t get_zpos();
-  uint16_t get_mpos();
-  uint16_t get_max_angle();
-
-  void set_zpos(uint16_t p_position);
-  void set_mpos(uint16_t p_position);
-  void set_max_angle(uint16_t p_angle);
+  uint8_t auto_gain_control();
+  uint16_t magnitude();
 
 private:
   hal::byte read_register(hal::byte p_register_address);
