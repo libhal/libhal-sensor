@@ -14,8 +14,10 @@
 
 #include <bitset>
 
+#include <cstdint>
 #include <libhal-sensor/as5600.hpp>
 #include <libhal-util/i2c.hpp>
+#include <libhal-util/map.hpp>
 
 namespace hal::sensor {
 
@@ -32,28 +34,40 @@ hal::byte as5600::read_register(hal::byte p_register_address)
   return response[0];
 }
 
-uint16_t as5600::zpos()
+uint8_t as5600::zmco()
+{
+  hal::byte zmco = read_register(0x00);
+  return (zmco & 0b11);
+}
+
+hal::degrees as5600::zpos()
 {
   auto const low_byte = read_register(0x02);
   auto const hi_byte = (read_register(0x01) & 0b1111) /*only take last 4 bits*/;
+  uint16_t const combined = (hi_byte << 8) | low_byte;
 
-  return (hi_byte << 8) | low_byte;
+  return hal::map(
+    combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
-uint16_t as5600::mpos()
+hal::degrees as5600::mpos()
 {
   auto const low_byte = read_register(0x04);
   auto const hi_byte = (read_register(0x03) & 0b1111) /*only take last 4 bits*/;
+  uint16_t const combined = (hi_byte << 8) | low_byte;
 
-  return (hi_byte << 8) | low_byte;
+  return hal::map(
+    combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
-uint16_t as5600::max_angle()
+hal::degrees as5600::max_angle()
 {
   auto const low_byte = read_register(0x05);
   auto const hi_byte = (read_register(0x06) & 0b1111) /*only take last 4 bits*/;
+  uint16_t const combined = (hi_byte << 8) | low_byte;
 
-  return (hi_byte << 8) | low_byte;
+  return hal::map(
+    combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
 as5600::power_mode_config as5600::power_mode()
@@ -90,34 +104,43 @@ as5600::hysteresis_config as5600::hysteresis()
 
 bool as5600::watchdog_enabled()
 {
-  auto conf_byte = read_register(0x07);
+  auto const conf_byte = read_register(0x07);
   std::bitset<8> conf_bits{ conf_byte };
   return conf_bits[5];
 }
 
-void as5600::zpos(uint16_t p_position)
+void as5600::zpos(hal::degrees p_angle)
 {
+  uint16_t const position =
+    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+
   hal::byte const hi_byte_base = read_register(0x01) & 0b11110000;
-  hal::byte const low_byte = p_position;
-  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
+  hal::byte const low_byte = position;
+  hal::byte const hi_byte = hi_byte_base | (position >> 8);
   hal::write(
     *m_i2c, m_address, std::array<hal::byte, 3>{ 0x01, hi_byte, low_byte });
 }
 
-void as5600::mpos(uint16_t p_position)
+void as5600::mpos(hal::degrees p_angle)
 {
+  uint16_t const position =
+    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+
   hal::byte const hi_byte_base = read_register(0x03) & 0b11110000;
-  hal::byte const low_byte = p_position;
-  hal::byte const hi_byte = hi_byte_base | (p_position >> 8);
+  hal::byte const low_byte = position;
+  hal::byte const hi_byte = hi_byte_base | (position >> 8);
   hal::write(
     *m_i2c, m_address, std::array<hal::byte, 3>{ 0x03, hi_byte, low_byte });
 }
 
-void as5600::max_angle(uint16_t p_angle)
+void as5600::max_angle(hal::degrees p_angle)
 {
-  hal::byte hi_byte_base = read_register(0x06) & 0b11110000;
-  hal::byte low_byte = p_angle;
-  hal::byte hi_byte = hi_byte_base | (p_angle >> 8);
+  uint16_t const position =
+    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+
+  hal::byte const hi_byte_base = read_register(0x06) & 0b11110000;
+  hal::byte const low_byte = position;
+  hal::byte const hi_byte = hi_byte_base | (position >> 8);
   hal::write(
     *m_i2c, m_address, std::array<hal::byte, 3>{ 0x06, hi_byte, low_byte });
 }
@@ -177,20 +200,24 @@ void as5600::watchdog(bool p_enabled)
   hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x07, conf_byte });
 }
 
-uint16_t as5600::raw_angle()
+hal::degrees as5600::raw_angle()
 {
   auto const low_byte = read_register(0x0D);
   auto const hi_byte = (read_register(0x0C) & 0b1111) /*only take last 4 bits*/;
+  uint16_t const combined = (hi_byte << 8) | low_byte;
 
-  return (hi_byte << 8) | low_byte;
+  return hal::map(
+    combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
-uint16_t as5600::angle()
+hal::degrees as5600::angle()
 {
   auto const low_byte = read_register(0x0F);
   auto const hi_byte = (read_register(0x0E) & 0b1111) /*only take last 4 bits*/;
+  uint16_t const combined = (hi_byte << 8) | low_byte;
 
-  return (hi_byte << 8) | low_byte;
+  return hal::map(
+    combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
 bool as5600::magnet_detected()

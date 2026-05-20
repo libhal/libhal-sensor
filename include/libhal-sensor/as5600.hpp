@@ -16,6 +16,7 @@
 
 #include <libhal-util/bit.hpp>
 #include <libhal/i2c.hpp>
+#include <libhal/units.hpp>
 
 namespace hal::sensor {
 class as5600
@@ -23,7 +24,7 @@ class as5600
 public:
   enum class power_mode_config
   {
-    normal_mode,  // double check this
+    normal_mode,
     low_power_mode_1,
     low_power_mode_2,
     low_power_mode_3,
@@ -40,22 +41,22 @@ public:
   as5600(hal::i2c& p_i2c);
 
   uint8_t zmco();
-  uint16_t zpos();
-  uint16_t mpos();
-  uint16_t max_angle();
+  hal::degrees zpos();
+  hal::degrees mpos();
+  hal::degrees max_angle();
   power_mode_config power_mode();
   hysteresis_config hysteresis();
   bool watchdog_enabled();
 
-  void zpos(uint16_t p_position);
-  void mpos(uint16_t p_position);
-  void max_angle(uint16_t p_angle);
+  void zpos(hal::degrees p_angle);
+  void mpos(hal::degrees p_angle);
+  void max_angle(hal::degrees p_angle);
   void power_mode(power_mode_config p_power_mode);
   void hysteresis(hysteresis_config p_hysteresis);
   void watchdog(bool p_enabled);
 
-  uint16_t raw_angle();
-  uint16_t angle();
+  hal::degrees raw_angle();
+  hal::degrees angle();
 
   bool magnet_detected();
   bool magnet_too_strong();

@@ -33,12 +33,34 @@ void application(resource_list& p_map)
   if (hall_sensor.magnet_detected()) {
     hal::print(console, "Magnet detected\n");
   }
+  auto const zmco = hall_sensor.zmco();
+  auto const zpos = hall_sensor.zpos();
+  auto const mpos = hall_sensor.mpos();
+  auto const max_angle = hall_sensor.max_angle();
+  auto const power_mode = hall_sensor.power_mode();
+  auto const hysteresis = hall_sensor.hysteresis();
+  bool watchdog_enabled = hall_sensor.watchdog_enabled();
+
+  auto const agc = hall_sensor.auto_gain_control();
+  auto const mag = hall_sensor.magnitude();
+
+  hal::print<32>(console, "ZMCO: %d \n", zmco);
+  hal::print<32>(console, "ZPOS: %.2f \n", zpos);
+  hal::print<32>(console, "mPOS: %.2f \n", mpos);
+  hal::print<32>(console, "Max Angle: %.2f \n", max_angle);
+  hal::print<32>(console, "Power Mode: %d \n", power_mode);
+  hal::print<32>(console, "Hysteresis: %d \n", hysteresis);
+  hal::print<32>(console, "WD: %d \n", watchdog_enabled);
+  hal::print<32>(console, "AGC: %d \n", agc);
+  hal::print<32>(console, "Magnitude: %d \n", mag);
 
   while (true) {
     if (hall_sensor.magnet_detected()) {
-      auto raw_angle = hall_sensor.get_raw_angle();
+      auto raw_angle = hall_sensor.raw_angle();
+      auto angle = hall_sensor.angle();
 
-      hal::print<64>(console, "Raw Angle: %u \n", raw_angle);
+      hal::print<64>(console, "Raw Angle: %.2f    ", raw_angle);
+      hal::print<64>(console, "Angle: %.2f \n", angle);
     }
     hal::delay(clock, 500ms);
   }
