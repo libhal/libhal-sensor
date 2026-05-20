@@ -34,13 +34,13 @@ hal::byte as5600::read_register(hal::byte p_register_address)
   return response[0];
 }
 
-uint8_t as5600::zmco()
+uint8_t as5600::burn_count()
 {
   hal::byte zmco = read_register(0x00);
   return (zmco & 0b11);
 }
 
-hal::degrees as5600::zpos()
+hal::degrees as5600::start_angle()
 {
   auto const low_byte = read_register(0x02);
   auto const hi_byte = (read_register(0x01) & 0b1111) /*only take last 4 bits*/;
@@ -50,7 +50,7 @@ hal::degrees as5600::zpos()
     combined, std::make_pair(0, 4095), std::make_pair(0.0, 360.0));
 }
 
-hal::degrees as5600::mpos()
+hal::degrees as5600::stop_angle()
 {
   auto const low_byte = read_register(0x04);
   auto const hi_byte = (read_register(0x03) & 0b1111) /*only take last 4 bits*/;
@@ -109,7 +109,7 @@ bool as5600::watchdog_enabled()
   return conf_bits[5];
 }
 
-void as5600::zpos(hal::degrees p_angle)
+void as5600::start_angle(hal::degrees p_angle)
 {
   uint16_t const position =
     hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
@@ -121,7 +121,7 @@ void as5600::zpos(hal::degrees p_angle)
     *m_i2c, m_address, std::array<hal::byte, 3>{ 0x01, hi_byte, low_byte });
 }
 
-void as5600::mpos(hal::degrees p_angle)
+void as5600::stop_angle(hal::degrees p_angle)
 {
   uint16_t const position =
     hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));

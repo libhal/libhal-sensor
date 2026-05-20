@@ -33,9 +33,9 @@ void application(resource_list& p_map)
   if (hall_sensor.magnet_detected()) {
     hal::print(console, "Magnet detected\n");
   }
-  auto const zmco = hall_sensor.zmco();
-  auto const zpos = hall_sensor.zpos();
-  auto const mpos = hall_sensor.mpos();
+  auto const burn_count = hall_sensor.burn_count();
+  auto const start_angle = hall_sensor.start_angle();
+  auto const stop_angle = hall_sensor.stop_angle();
   auto const max_angle = hall_sensor.max_angle();
   auto const power_mode = hall_sensor.power_mode();
   auto const hysteresis = hall_sensor.hysteresis();
@@ -44,9 +44,9 @@ void application(resource_list& p_map)
   auto const agc = hall_sensor.auto_gain_control();
   auto const mag = hall_sensor.magnitude();
 
-  hal::print<32>(console, "ZMCO: %d \n", zmco);
-  hal::print<32>(console, "ZPOS: %.2f \n", zpos);
-  hal::print<32>(console, "mPOS: %.2f \n", mpos);
+  hal::print<32>(console, "Burn count: %d \n", burn_count);
+  hal::print<32>(console, "Start angle: %.2f \n", start_angle);
+  hal::print<32>(console, "Stop angle: %.2f \n", stop_angle);
   hal::print<32>(console, "Max Angle: %.2f \n", max_angle);
   hal::print<32>(console, "Power Mode: %d \n", power_mode);
   hal::print<32>(console, "Hysteresis: %d \n", hysteresis);
