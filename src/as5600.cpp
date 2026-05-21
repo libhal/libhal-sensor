@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <bitset>
 
 #include <cstdint>
@@ -111,8 +112,9 @@ bool as5600::watchdog_enabled()
 
 void as5600::start_angle(hal::degrees p_angle)
 {
-  uint16_t const position =
-    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+  hal::degrees const clamped_angle = std::clamp(p_angle, 0, 360);
+  uint16_t const position = hal::map(
+    clamped_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
 
   hal::byte const hi_byte_base = read_register(0x01) & 0b11110000;
   hal::byte const low_byte = position;
@@ -123,8 +125,9 @@ void as5600::start_angle(hal::degrees p_angle)
 
 void as5600::stop_angle(hal::degrees p_angle)
 {
-  uint16_t const position =
-    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+  hal::degrees const clamped_angle = std::clamp(p_angle, 0, 360);
+  uint16_t const position = hal::map(
+    clamped_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
 
   hal::byte const hi_byte_base = read_register(0x03) & 0b11110000;
   hal::byte const low_byte = position;
@@ -135,8 +138,9 @@ void as5600::stop_angle(hal::degrees p_angle)
 
 void as5600::max_angle(hal::degrees p_angle)
 {
-  uint16_t const position =
-    hal::map(p_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
+  hal::degrees const clamped_angle = std::clamp(p_angle, 0, 360);
+  uint16_t const position = hal::map(
+    clamped_angle, std::make_pair(0.0, 360.0), std::make_pair(0, 4095));
 
   hal::byte const hi_byte_base = read_register(0x06) & 0b11110000;
   hal::byte const low_byte = position;
