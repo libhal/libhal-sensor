@@ -66,15 +66,6 @@ public:
   as5600(hal::i2c& p_i2c);
 
   /**
-   * @brief Get the number of times start and stop angles have been permanently
-   * written using the burn angle command. Burn angle command can be used a max
-   * of 3 times.
-   *
-   * @return uint8_t - Number of times burn angle was used.
-   */
-  uint8_t burn_count();
-
-  /**
    * @brief Get the start angle to use when using a narrower angular range.
    *
    * Used in combination with either a stop angle or the max angle of
@@ -228,9 +219,6 @@ public:
    * @return uint16_t - Magnitude value
    */
   uint16_t magnitude();
-
-  // TODO: consider making functions for burn angle and burn settings
-  // - limited amount of times burn commands can be used (potentially dangerous)
 
 private:
   hal::byte read_register(hal::byte p_register_address);

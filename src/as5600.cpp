@@ -35,12 +35,6 @@ hal::byte as5600::read_register(hal::byte p_register_address)
   return response[0];
 }
 
-uint8_t as5600::burn_count()
-{
-  hal::byte zmco = read_register(0x00);
-  return (zmco & 0b11);
-}
-
 hal::degrees as5600::start_angle()
 {
   auto const low_byte = read_register(0x02);
