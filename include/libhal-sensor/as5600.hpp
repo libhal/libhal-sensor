@@ -16,6 +16,7 @@
 
 #include <libhal-util/bit.hpp>
 #include <libhal/i2c.hpp>
+#include <libhal/pointers.hpp>
 #include <libhal/units.hpp>
 
 namespace hal::sensor {
@@ -38,32 +39,39 @@ public:
    * @brief Power mode settings available to use when configuring.
    *
    */
-  enum class power_mode_config
+  enum class power_mode_config : u8
   {
-    normal_mode,
-    low_power_mode_1,
-    low_power_mode_2,
-    low_power_mode_3,
+    normal_mode = 0,
+    low_power_mode_1 = 0b01,
+    low_power_mode_2 = 0b10,
+    low_power_mode_3 = 0b11,
   };
 
   /**
    * @brief Hysteresis mode settings available to use when configuring.
    *
    */
-  enum class hysteresis_config
+  enum class hysteresis_config : u8
   {
-    off,
-    lsb_1,
-    lsb_2,
-    lsb_3
+    off = 0,
+    lsb_1 = 0b0100,
+    lsb_2 = 0b1000,
+    lsb_3 = 0b1100
   };
+
+  struct magnet
+  {
+    bool detected;
+    bool too_strong;
+    bool too_weak;
+  }
 
   /**
    * @brief Construct a new as5600 object
    *
    * @param p_i2c i2c bus of the device
    */
-  as5600(hal::i2c& p_i2c);
+  as5600(hal::strong_ptr<hal::i2c> const& p_i2c);
 
   /**
    * @brief Get the start angle to use when using a narrower angular range.
@@ -178,33 +186,7 @@ public:
    */
   hal::degrees angle();
 
-  /**
-   * @brief Get the state of magnet detected status bit.
-   *
-   * @return true - Magnet is detected.
-   * @return false - No magnet detected.
-   */
-  bool magnet_detected();
-
-  /**
-   * @brief Get the state of the magnet too strong status bit.
-   *
-   * Will be true if automatic gain control minimum gain overflows.
-   *
-   * @return true - Magnet too strong.
-   * @return false - Magnet not too strong.
-   */
-  bool magnet_too_strong();
-
-  /**
-   * @brief Get the state of the magnet too weak status bit.
-   *
-   * Will be true if automatic gain control maximum gain overflows.
-   *
-   * @return true - Magnet too weak.
-   * @return false - Magnet not too weak.
-   */
-  bool magnet_too_weak();
+  magnet magnet_status();
 
   /**
    * @brief Get the current gain of the automatic gain control.
@@ -222,8 +204,9 @@ public:
 
 private:
   hal::byte read_register(hal::byte p_register_address);
+  void write_angle_to_register(hal::byte p_register, hal::degrees p_angle);
 
-  hal::i2c* m_i2c;
-  hal::byte m_address = 0x36;
+  hal::strong_ptr<hal::i2c> m_i2c;
+  static constexpr hal::byte m_address = 0x36;
 };
 }  // namespace hal::sensor
