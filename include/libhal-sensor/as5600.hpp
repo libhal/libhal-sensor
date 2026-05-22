@@ -15,9 +15,11 @@
 #pragma once
 
 #include <libhal-util/bit.hpp>
+#include <libhal-util/i2c.hpp>
 #include <libhal/i2c.hpp>
 #include <libhal/pointers.hpp>
 #include <libhal/units.hpp>
+#include <utility>
 
 namespace hal::sensor {
 /**
@@ -41,14 +43,15 @@ public:
    */
   enum class power_mode_config : u8
   {
-    normal_mode = 0,
-    low_power_mode_1 = 0b01,
-    low_power_mode_2 = 0b10,
-    low_power_mode_3 = 0b11,
+    normal_mode = 0,          // 6.5 mA
+    low_power_mode_1 = 0b01,  // polling time = 5ms, 3.4 mA
+    low_power_mode_2 = 0b10,  // polling time = 20ms, 1.8 mA
+    low_power_mode_3 = 0b11,  // polling time = 100ms 1.5 mA
   };
 
   /**
-   * @brief Hysteresis mode settings available to use when configuring.
+   * @brief Hysteresis mode settings available to use when configuring. Check
+   * data sheet for more information.
    *
    */
   enum class hysteresis_config : u8
@@ -64,7 +67,7 @@ public:
     bool detected;
     bool too_strong;
     bool too_weak;
-  }
+  };
 
   /**
    * @brief Construct a new as5600 object
@@ -76,9 +79,8 @@ public:
   /**
    * @brief Get the start angle to use when using a narrower angular range.
    *
-   * Used in combination with either a stop angle or the max angle of
-   * the angular range. The angular range must be greater than 18
-   * degrees.
+   * Used in combination with either a stop angle or the angular range
+   * register. The angular range must be greater than 18 degrees.
    *
    * @return hal::degrees - Start angle (0 - 360 degree range).
    */
@@ -87,32 +89,28 @@ public:
   /**
    * @brief Get the stop angle to use when using a narrower angular range.
    *
-   * The angular range must be greater than 18 degrees.
-   *
    * @return hal::degrees - Stop angle (0 - 360 degree range).
    */
   hal::degrees stop_angle();
 
   /**
-   * @brief Get the max angle to use when using a narrower angular range.
+   * @brief Get the angular range value.
    *
-   * The angular range must be greater than 18 degrees.
-   *
-   * @return hal::degrees - Max angle (0 - 360 degree range).
+   * @return hal::degrees - Angular range (0 - 360 degree range).
    */
-  hal::degrees max_angle();
+  hal::degrees angular_range();
 
   /**
-   * @brief Get the power mode setting for device. Normal operation mode is
-   * provided with 3 low power modes.
+   * @brief Get the power mode setting for device.
    *
    * @return power_mode_config - Current power mode
    */
   power_mode_config power_mode();
 
   /**
-   * @brief Get the hysteresis setting for device. 1 - 3 LSB hystersis settings
-   * are available.
+   * @brief Get the hysteresis setting for device.
+   *
+   * Check the AS5600 datasheet for more information about hysteresis.
    *
    * @return hysteresis_config - Current hysteresis mode.
    */
@@ -121,13 +119,22 @@ public:
   /**
    * @brief Get the status of the watchdog timer
    *
+   * The watchdog timer allows saving power by switching into low power mode 3
+   * (100 ms polling time) if the angle stays within the watchdog threshold of 4
+   * LSB for at least one minute
+   *
    * @return true - Watchdog timer enabled
    * @return false - Watchdog timer disabled
    */
   bool watchdog_enabled();
 
   /**
-   * @brief Set the start angle to use when using a narrower angular range.
+   * @brief Set the start raw angle to use when using a narrower angular range.
+   * Any angle lower than this will be reported as a raw value of 0 until moved
+   * back into tracking range.
+   *
+   * The angular range is split up between 4096 steps. Reducing the range will
+   * increase the step resolution and must be greater than 18 degrees.
    *
    * @param p_angle - Start angle (0 - 360 degree range)
    */
@@ -135,17 +142,24 @@ public:
 
   /**
    * @brief Set the stop angle to use when using a narrower angular range.
+   * Any angle higher than this will be reported as a raw value of 4095 until
+   * moved back into tracking range.
+   *
+   * The angular range is split up between 4096 steps. Reducing the range will
+   * increase the step resolution and must be greater than 18 degrees.
    *
    * @param p_angle - Stop angle (0 - 360 degree range)
    */
   void stop_angle(hal::degrees p_angle);
 
   /**
-   * @brief Set the max angle to use when using a narrower angular range.
+   * @brief Set the angular range instead of manually setting the stop angle
    *
-   * @param p_angle - Max angle (0 - 360 degree range)
+   * stop angle = start angle + angular range
+   *
+   * @param p_angle - Angular range (0 - 360 degree range)
    */
-  void max_angle(hal::degrees p_angle);
+  void angular_range(hal::degrees p_angle);
 
   /**
    * @brief Set the power mode setting for device.
@@ -176,11 +190,12 @@ public:
   hal::degrees raw_angle();
 
   /**
-   * @brief Get the scaled angle.
+   * @brief Get the angle scaled to narrower angle range specified with start
+   * position in combination with either stop position or angular range.
    *
    * Angle register has a 10-LSB hysteresis at the limit of the 360 degree range
    * to avoid discontinuity points or toggling of the output within one
-   * rotation.
+   * rotation. Check datasheet for more information.
    *
    * @return hal::degrees
    */
@@ -203,10 +218,19 @@ public:
   uint16_t magnitude();
 
 private:
-  hal::byte read_register(hal::byte p_register_address);
+  template<usize Size>
+  auto read_register(hal::byte p_register_address)
+  {
+    hal::write(
+      *m_i2c, m_address, std::array<hal::byte, 1>{ p_register_address });
+    return hal::read<Size>(*m_i2c, m_address);
+  }
+
   void write_angle_to_register(hal::byte p_register, hal::degrees p_angle);
 
   hal::strong_ptr<hal::i2c> m_i2c;
   static constexpr hal::byte m_address = 0x36;
+
+  std::pair<hal::degrees, hal::degrees> m_narrowed_range;
 };
 }  // namespace hal::sensor

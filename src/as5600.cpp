@@ -24,95 +24,116 @@
 namespace hal::sensor {
 
 constexpr auto as5600_raw_range = std::make_pair(0, 4095);
-constexpr auto as5600_degree_range = std::make_pair(0.0f, 359.912f);
+constexpr auto as5600_degree_range = std::make_pair(0.0f, 359.0f);
 
 as5600::as5600(hal::strong_ptr<hal::i2c> const& p_i2c)
   : m_i2c(p_i2c)
 {
+  m_narrowed_range.first = start_angle();
+  m_narrowed_range.second = stop_angle();
+  if (m_narrowed_range.first == 0.0 && m_narrowed_range.second == 0) {
+    m_narrowed_range.second = m_narrowed_range.first + angular_range();
+    if (m_narrowed_range.second == 0) {
+      m_narrowed_range.second = as5600_degree_range.second;
+    }
+  }
 }
 
-hal::byte as5600::read_register(hal::byte p_register_address)
+void as5600::write_angle_to_register(hal::byte p_register, hal::degrees p_angle)
 {
-  hal::write(*m_i2c, m_address, std::array<hal::byte, 1>{ p_register_address });
-  return hal::read<1>(*m_i2c, m_address)[0];
-}
-
-void as5600::write_angle_to_register(hal::byte p_register, hal::degrees p_angle) 
-{
-  hal::degrees const clamped_angle = std::clamp(p_angle, as5600_degree_range.first, as5600_degree_range.second);
+  hal::degrees const clamped_angle =
+    std::clamp(p_angle, as5600_degree_range.first, as5600_degree_range.second);
   uint16_t const position =
     hal::map(clamped_angle, as5600_degree_range, as5600_raw_range);
 
-  hal::byte const hi_byte_base = read_register(p_register) & 0b11110000;
+  hal::byte const hi_byte_base =
+    as5600::read_register<1>(p_register)[0] & 0b11110000;
   hal::byte const low_byte = position;
   hal::byte const hi_byte = hi_byte_base | (position >> 8);
-  hal::write(
-    *m_i2c, m_address, std::array<hal::byte, 3>{ p_register, hi_byte, low_byte });
+  hal::write(*m_i2c,
+             m_address,
+             std::array<hal::byte, 3>{ p_register, hi_byte, low_byte });
 }
 
 hal::degrees as5600::start_angle()
 {
-  auto const low_byte = read_register(0x02);
-  auto const hi_byte = (read_register(0x01) & 0b1111);
-  uint16_t const combined = (hi_byte << 8) | low_byte;
+  auto register_bytes = as5600::read_register<2>(0x01);
 
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
+  uint16_t const combined = (hi_byte << 8) | low_byte;
   return hal::map(combined, as5600_raw_range, as5600_degree_range);
 }
 
 hal::degrees as5600::stop_angle()
 {
-  auto const low_byte = read_register(0x04);
-  auto const hi_byte = (read_register(0x03) & 0b1111);
-  uint16_t const combined = (hi_byte << 8) | low_byte;
+  auto register_bytes = as5600::read_register<2>(0x03);
 
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
+  uint16_t const combined = (hi_byte << 8) | low_byte;
   return hal::map(combined, as5600_raw_range, as5600_degree_range);
 }
 
-hal::degrees as5600::max_angle()
+hal::degrees as5600::angular_range()
 {
-  auto const low_byte = read_register(0x05);
-  auto const hi_byte = (read_register(0x06) & 0b1111);
-  uint16_t const combined = (hi_byte << 8) | low_byte;
+  auto register_bytes = as5600::read_register<2>(0x05);
 
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
+  uint16_t const combined = (hi_byte << 8) | low_byte;
   return hal::map(combined, as5600_raw_range, as5600_degree_range);
 }
 
 as5600::power_mode_config as5600::power_mode()
 {
-  return static_cast<power_mode_config>(read_register(0x08) & 0b11);
+  return static_cast<power_mode_config>(as5600::read_register<1>(0x08)[0] &
+                                        0b11);
 }
 
 as5600::hysteresis_config as5600::hysteresis()
 {
-  return static_cast<hysteresis_config>(read_register(0x08) & 0b1100);
+  return static_cast<hysteresis_config>(as5600::read_register<1>(0x08)[0] &
+                                        0b1100);
 }
 
 bool as5600::watchdog_enabled()
 {
-  auto const conf_byte = read_register(0x07);
+  auto const conf_byte = as5600::read_register<1>(0x07)[0];
   std::bitset<8> conf_bits{ conf_byte };
   return conf_bits[5];
 }
 
 void as5600::start_angle(hal::degrees p_angle)
 {
-  write_angle_to_register(0x01, p_angle);
+  auto const clamped_angle =
+    std::clamp(p_angle, as5600_degree_range.first, as5600_degree_range.second);
+  m_narrowed_range.first = clamped_angle;
+  write_angle_to_register(0x01, clamped_angle);
 }
 
 void as5600::stop_angle(hal::degrees p_angle)
 {
-  write_angle_to_register(0x03, p_angle);
+  auto const clamped_angle =
+    std::clamp(p_angle, as5600_degree_range.first, as5600_degree_range.second);
+  m_narrowed_range.second = clamped_angle;
+  write_angle_to_register(0x03, clamped_angle);
 }
 
-void as5600::max_angle(hal::degrees p_angle)
+void as5600::angular_range(hal::degrees p_angle)
 {
-  write_angle_to_register(0x06, p_angle);
+  auto const clamped_angle =
+    std::clamp(p_angle,
+               as5600_degree_range.first,
+               as5600_degree_range.second - m_narrowed_range.first);
+  m_narrowed_range.second = m_narrowed_range.first + clamped_angle;
+  write_angle_to_register(0x05, p_angle);
 }
 
 void as5600::power_mode(as5600::power_mode_config p_power_mode)
 {
   hal::byte bits = std::to_underlying(p_power_mode);
-  auto conf_byte = read_register(0x08);
+  auto conf_byte = as5600::read_register<1>(0x08)[0];
   conf_byte = conf_byte & 0b11111100;
   conf_byte = conf_byte | bits;
   hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x08, conf_byte });
@@ -121,7 +142,7 @@ void as5600::power_mode(as5600::power_mode_config p_power_mode)
 void as5600::hysteresis(as5600::hysteresis_config p_hysteresis)
 {
   hal::byte bits = std::to_underlying(p_hysteresis);
-  auto conf_byte = read_register(0x08);
+  auto conf_byte = as5600::read_register<1>(0x08)[0];
   conf_byte = conf_byte & 0b11110011;
   conf_byte = conf_byte | bits;
   hal::write(*m_i2c, m_address, std::array<hal::byte, 2>{ 0x08, conf_byte });
@@ -129,51 +150,56 @@ void as5600::hysteresis(as5600::hysteresis_config p_hysteresis)
 
 void as5600::watchdog(bool p_enabled)
 {
-  hal::byte conf_byte = read_register(0x07);
+  hal::byte conf_byte = as5600::read_register<1>(0x07)[0];
   std::bitset<8> conf_bits{ conf_byte };
   conf_bits.set(5, p_enabled);
   conf_byte = static_cast<uint8_t>(conf_bits.to_ulong());
-  hal::write(*m_i2c, m_address, std::to_array({ 0x07, conf_byte }));
+  hal::write(*m_i2c, m_address, std::to_array<hal::byte>({ 0x07, conf_byte }));
 }
 
 hal::degrees as5600::raw_angle()
 {
-  auto const low_byte = read_register(0x0D);
-  auto const hi_byte = (read_register(0x0C) & 0b1111);
-  uint16_t const combined = (hi_byte << 8) | low_byte;
+  auto register_bytes = as5600::read_register<2>(0x0C);
 
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
+  uint16_t const combined = (hi_byte << 8) | low_byte;
   return hal::map(combined, as5600_raw_range, as5600_degree_range);
 }
 
 hal::degrees as5600::angle()
 {
-  auto const low_byte = read_register(0x0F);
-  auto const hi_byte = (read_register(0x0E) & 0b1111);
-  uint16_t const combined = (hi_byte << 8) | low_byte;
+  auto register_bytes = as5600::read_register<2>(0x0E);
 
-  return hal::map(combined, as5600_raw_range, as5600_degree_range);
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
+  uint16_t const combined = (hi_byte << 8) | low_byte;
+  return hal::map(combined, as5600_raw_range, m_narrowed_range);
 }
 
-as5600::magnet as5600::magnet_status() {
-  auto const status_byte = read_register(0x0B);
+as5600::magnet as5600::magnet_status()
+{
+  auto const status_byte = as5600::read_register<1>(0x0B)[0];
   std::bitset<8> status_bits{ status_byte };
 
   as5600::magnet magnet;
   magnet.detected = status_bits[5];
-  magnet.too_strong = status_bits[3]; 
-  magnet.too_weak = status_bits[4]};
+  magnet.too_strong = status_bits[3];
+  magnet.too_weak = status_bits[4];
   return magnet;
 }
 
 uint8_t as5600::auto_gain_control()
 {
-  return read_register(0x1A);
+  return as5600::read_register<1>(0x1A)[0];
 }
 
 uint16_t as5600::magnitude()
 {
-  auto const low_byte = read_register(0x1C);
-  auto const hi_byte = (read_register(0x1B) & 0b1111);
+  auto register_bytes = as5600::read_register<2>(0x1B);
+
+  auto const low_byte = register_bytes[1];
+  auto const hi_byte = (register_bytes[0] & 0b1111);
 
   return (hi_byte << 8) | low_byte;
 }
