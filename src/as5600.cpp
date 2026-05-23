@@ -182,11 +182,11 @@ as5600::magnet as5600::magnet_status()
   auto const status_byte = as5600::read_register<1>(0x0B)[0];
   std::bitset<8> status_bits{ status_byte };
 
-  as5600::magnet magnet;
-  magnet.detected = status_bits[5];
-  magnet.too_strong = status_bits[3];
-  magnet.too_weak = status_bits[4];
-  return magnet;
+  as5600::magnet magnet_status;
+  magnet_status.detected = status_bits[5];
+  magnet_status.too_strong = status_bits[3];
+  magnet_status.too_weak = status_bits[4];
+  return magnet_status;
 }
 
 uint8_t as5600::auto_gain_control()
