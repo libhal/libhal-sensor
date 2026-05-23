@@ -43,10 +43,14 @@ public:
    */
   enum class power_mode_config : u8
   {
-    normal_mode = 0,          // 6.5 mA
-    low_power_mode_1 = 0b01,  // polling time = 5ms, 3.4 mA
-    low_power_mode_2 = 0b10,  // polling time = 20ms, 1.8 mA
-    low_power_mode_3 = 0b11,  // polling time = 100ms 1.5 mA
+    /// Normal mode results in a current consumption of: 6.5 mA
+    normal_mode = 0,
+    /// Polling period = 5ms, current consumption of = 3.4 mA
+    low_power_mode_1 = 0b01,
+    /// Polling period = 20ms, current consumption of = 1.8 mA
+    low_power_mode_2 = 0b10,
+    /// Polling period = 100ms, current consumption of = 1.5 mA
+    low_power_mode_3 = 0b11,
   };
 
   /**
@@ -62,10 +66,28 @@ public:
     lsb_3 = 0b1100
   };
 
+  /**
+   * @brief Magnet status object.
+   *
+   */
   struct magnet
   {
+    /**
+     * @brief Magnet detected flag. Is true when magnet is detected.
+     *
+     */
     bool detected;
+    /**
+     * @brief Magnet too strong flag. Is true when magnetic field is too strong
+     * (possibly too close to sensor).
+     *
+     */
     bool too_strong;
+    /**
+     * @brief Magnet too weak flag. Is true when magnetic field is too weak
+     * (possibly too far from sensor).
+     *
+     */
     bool too_weak;
   };
 
