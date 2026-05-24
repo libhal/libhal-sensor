@@ -14,12 +14,13 @@
 
 #pragma once
 
+#include <utility>
+
 #include <libhal-util/bit.hpp>
 #include <libhal-util/i2c.hpp>
 #include <libhal/i2c.hpp>
 #include <libhal/pointers.hpp>
 #include <libhal/units.hpp>
-#include <utility>
 
 namespace hal::sensor {
 /**
@@ -43,14 +44,14 @@ public:
    */
   enum class power_mode_config : u8
   {
-    /// Normal mode results in a current consumption of: 6.5 mA
-    normal_mode = 0,
+    /// Normal mode with max sampling rate results in a current consumption of: 6.5 mA
+    poll_max_6500uA = 0,
     /// Polling period = 5ms, current consumption of = 3.4 mA
-    low_power_mode_1 = 0b01,
+    poll_5ms_3400uA = 0b01,
     /// Polling period = 20ms, current consumption of = 1.8 mA
-    low_power_mode_2 = 0b10,
+    poll_20ms_1800uA = 0b10,
     /// Polling period = 100ms, current consumption of = 1.5 mA
-    low_power_mode_3 = 0b11,
+    poll_100ms_1500uA = 0b11,
   };
 
   /**
@@ -215,9 +216,16 @@ public:
    * @brief Get the angle scaled to narrower angle range specified with start
    * position in combination with either stop position or angular range.
    *
-   * Angle register has a 10-LSB hysteresis at the limit of the 360 degree range
+   * Angle register has a hysteresis of 10-LSB at the limit of the 360 degree range
    * to avoid discontinuity points or toggling of the output within one
    * rotation. Check datasheet for more information.
+   *
+   * Explanation of hysteresis: the 10-LSB simply means that when the angle crosses
+   * from 4095 (max 12-bit unsigned integer value) to 0, the sensor waits until the 
+   * angle represented by the value of 10 is reached, then the angle value jumps
+   * from 4095 to 10. Rotating the angle back towards 0 will decrease from 10 until 
+   * 0 is reached. When the zero crossing is reached, the value will stay 0 until 
+   * the angle represented by 4085 is reached, then the value will change.
    *
    * @return hal::degrees
    */
