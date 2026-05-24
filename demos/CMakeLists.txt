@@ -19,10 +19,12 @@ project(demos LANGUAGES CXX)
 libhal_build_demos(
   DEMOS
   #bmp180
-  icm20948
-  mpl3115a2
-  mpu6050
-  tmp102
+  as5600
+  #icm20948
+  #mpl3115a2
+  #mpu6050
+  #tmp102
+  #TODO(#37): update drivers and demos to use strong ptr
 
   INCLUDES
   .

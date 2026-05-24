@@ -14,24 +14,33 @@
 
 #pragma once
 
-#include <optional>
-
+#include <libhal/can.hpp>
 #include <libhal/functional.hpp>
 #include <libhal/i2c.hpp>
 #include <libhal/output_pin.hpp>
+#include <libhal/pointers.hpp>
+#include <libhal/pwm.hpp>
 #include <libhal/serial.hpp>
 #include <libhal/steady_clock.hpp>
+#include <libhal/units.hpp>
 
-struct resource_list
-{
-  hal::callback<void()> reset;
-  std::optional<hal::serial*> console;
-  std::optional<hal::steady_clock*> clock;
-  std::optional<hal::output_pin*> status_led;
-  std::optional<hal::i2c*> i2c;
-  // Add more driver interfaces here ...
-};
+namespace resources {
+std::pmr::polymorphic_allocator<> driver_allocator();
+void reset();
+void sleep(hal::time_duration p_duration);
+hal::v5::strong_ptr<hal::serial> console();
+hal::v5::strong_ptr<hal::serial> uart2();
+hal::v5::strong_ptr<hal::steady_clock> clock();
+hal::v5::strong_ptr<hal::output_pin> status_led();
+hal::v5::strong_ptr<hal::can_transceiver> can_transceiver();
+hal::v5::strong_ptr<hal::can_bus_manager> can_bus_manager();
+hal::v5::strong_ptr<hal::can_identifier_filter> can_identifier_filter();
+hal::v5::strong_ptr<hal::pwm> pwm();
+hal::v5::strong_ptr<hal::pwm16_channel> pwm_channel();
+hal::v5::strong_ptr<hal::pwm_group_manager> pwm_frequency();
+hal::v5::strong_ptr<hal::i2c> i2c();
+}  // namespace resources
 
-void initialize_platform(resource_list& p_resources);
 // Application function is implemented by one of the .cpp files.
-void application(resource_list& p_resources);
+void initialize_platform();
+void application();

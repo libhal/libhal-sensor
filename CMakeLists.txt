@@ -22,6 +22,7 @@ libhal_test_and_make_library(
   LIBRARY_NAME libhal-sensor
 
   SOURCES
+  src/as5600.cpp
   src/imu/icm20948.cpp
   src/imu/mpu6050.cpp
   src/multi/bmp180.cpp
@@ -33,5 +34,6 @@ libhal_test_and_make_library(
   tests/imu/mpu6050.test.cpp
   tests/multi/bmp180.test.cpp
   tests/temperature/tmp102.test.cpp
+  tests/as5600.cpp
   tests/main.test.cpp
 )

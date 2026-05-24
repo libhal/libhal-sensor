@@ -12,75 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <libhal-exceptions/control.hpp>
+#include <cstdio>
+
+#include <exception>
+
 #include <libhal-util/serial.hpp>
 #include <libhal-util/steady_clock.hpp>
-#include <libhal/error.hpp>
 
 #include <resource_list.hpp>
 
-resource_list resources{};
-
-[[noreturn]] void terminate_handler() noexcept
-{
-  if (resources.console) {
-    hal::print(*resources.console.value(), "☠️ APPLICATION TERMINATED ☠️\n\n");
-  }
-
-  if (resources.status_led && resources.clock) {
-    auto& led = *resources.status_led.value();
-    auto& clock = *resources.clock.value();
-
-    while (true) {
-      using namespace std::chrono_literals;
-      led.level(false);
-      hal::delay(clock, 100ms);
-      led.level(true);
-      hal::delay(clock, 100ms);
-      led.level(false);
-      hal::delay(clock, 100ms);
-      led.level(true);
-      hal::delay(clock, 1000ms);
-    }
-  }
-
-  // spin here forever
-  while (true) {
-    continue;
-  }
-}
-
 int main()
 {
-  try {
-    initialize_platform(resources);
-  } catch (...) {
-    while (true) {
-      // halt here and wait for a debugger to connect
-      continue;
-    }
-  }
-
-  hal::set_terminate(terminate_handler);
-
-  try {
-    application(resources);
-  } catch (std::bad_optional_access const& e) {
-    if (resources.console) {
-      hal::print(*resources.console.value(),
-                 "A resource required by the application was not available!\n"
-                 "Calling terminate!\n");
-    }
-  }  // Allow any other exceptions to terminate the application
-
-  // Terminate if the code reaches this point.
+  initialize_platform();
+  application();
   std::terminate();
 }
 
-extern "C"
+// Override global new operator
+void* operator new(std::size_t)
 {
-  // This gets rid of an issue with libhal-exceptions in Debug mode.
-  void __assert_func()
-  {
-  }
+  std::terminate();
+}
+
+// Override global new[] operator
+void* operator new[](std::size_t)
+{
+  std::terminate();
+}
+
+void* operator new(unsigned int, std::align_val_t)
+{
+  std::terminate();
+}
+
+// Override global delete operator
+void operator delete(void*) noexcept
+{
+}
+
+// Override global delete[] operator
+void operator delete[](void*) noexcept
+{
+}
+
+// Optional: Override sized delete operators (C++14 and later)
+void operator delete(void*, std::size_t) noexcept
+{
+}
+
+void operator delete[](void*, std::size_t) noexcept
+{
+}
+
+void operator delete[](void*, std::align_val_t) noexcept
+{
+}
+
+void operator delete(void*, std::align_val_t) noexcept
+{
 }
